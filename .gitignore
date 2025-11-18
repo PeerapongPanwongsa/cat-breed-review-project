@@ -1,0 +1,21 @@
+นี่คือไฟล์ .gitignore ในโฟลเดอร์หลัก (cat-breed-review-project)
+
+1. (สำคัญที่สุด) ซ่อนโฟลเดอร์ node_modules ทั้งหมด
+
+node_modules/
+frontend/node_modules/
+
+2. ซ่อนไฟล์ Log และไฟล์ชั่วคราว
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+3. ซ่อนไฟล์ข้อมูลทดสอบ (เราไม่ควรเก็บ db.json ขึ้น git)
+
+frontend/db.json
+
+4. ซ่อนไฟล์ Environment (ถ้ามีในอนาคต)
+
+.env
+.env.local
