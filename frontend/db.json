@@ -1,0 +1,368 @@
+{
+  "cats": [
+    {
+      "id": 1,
+      "name": "สกอตติช โฟลด์ (Scottish Fold)",
+      "image_url": "https://placehold.co/600x400/D4A5A5/FFFFFF?text=Scottish+Fold",
+      "description": "มีนิสัยอ่อนโยน, ขี้อ้อน, และปรับตัวง่าย เป็นที่รู้จักจากหูที่พับไปข้างหน้าอันเป็นเอกลักษณ์",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 4,
+        "energyLevel": 3,
+        "grooming": 2
+      }
+    },
+    {
+      "id": 2,
+      "name": "บริติช ชอร์ตแฮร์ (British Shorthair)",
+      "image_url": "https://placehold.co/600x400/A5D4D4/FFFFFF?text=British+Shorthair",
+      "description": "แมวพันธุ์ขนสั้นที่มีรูปร่างกลมป้อม นิสัยใจเย็น, เป็นมิตร, และไม่ค่อยส่งเสียงดัง",
+      "ratings": {
+        "friendliness": 4,
+        "adaptability": 5,
+        "energyLevel": 2,
+        "grooming": 1
+      }
+    },
+    {
+      "id": 3,
+      "name": "มันช์กิ้น (Munchkin)",
+      "image_url": "https://placehold.co/600x400/D4CBA5/FFFFFF?text=Munchkin",
+      "description": "แมวขาสั้นแต่นิสัยขี้เล่นและพลังงานสูง ชอบเข้าสังคมและเป็นมิตรกับคนแปลกหน้า",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 4,
+        "energyLevel": 5,
+        "grooming": 2
+      }
+    },
+    {
+      "id": 4,
+      "name": "เปอร์เซีย (Persian)",
+      "image_url": "https://placehold.co/600x400/A5A5D4/FFFFFF?text=Persian",
+      "description": "แมวขนยาวหน้าตาน่ารัก นิสัยสงบเสงี่ยม, อ่อนหวาน, และต้องการการดูแลขนเป็นพิเศษทุกวัน",
+      "ratings": {
+        "friendliness": 4,
+        "adaptability": 3,
+        "energyLevel": 2,
+        "grooming": 5
+      }
+    },
+    {
+      "id": 5,
+      "name": "สฟิงซ์ (Sphynx)",
+      "image_url": "https://placehold.co/600x400/D4A5C0/FFFFFF?text=Sphynx",
+      "description": "แมวไร้ขนที่ดูโดดเด่น มีนิสัยขี้อ้อน, ฉลาด, และชอบเป็นจุดสนใจอย่างมาก",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 4,
+        "energyLevel": 4,
+        "grooming": 3
+      }
+    },
+    {
+      "id": 6,
+      "name": "แมวสยาม (Siamese)",
+      "image_url": "https://placehold.co/600x400/A5C0D4/FFFFFF?text=Siamese",
+      "description": "แมวไทยโบราณที่ฉลาด, ช่างพูด (เสียงดัง), และชอบเข้าสังคม ต้องการความสนใจจากเจ้าของ",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 3,
+        "energyLevel": 5,
+        "grooming": 1
+      }
+    },
+    {
+      "id": 7,
+      "name": "เมนคูน (Maine Coon)",
+      "image_url": "https://placehold.co/600x400/A5D4B6/FFFFFF?text=Maine+Coon",
+      "description": "แมวพันธุ์ใหญ่ใจดี, ขนยาว, และเป็นมิตร ฉลาด, ขี้เล่น, และเข้ากับเด็กและสัตว์อื่นได้ดี",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 5,
+        "energyLevel": 4,
+        "grooming": 3
+      }
+    },
+    {
+      "id": 8,
+      "name": "แร็กดอลล์ (Ragdoll)",
+      "image_url": "https://placehold.co/600x400/D4B6A5/FFFFFF?text=Ragdoll",
+      "description": "แมวขนาดใหญ่ที่มีนิสัยผ่อนคลายเหมือนตุ๊กตาผ้า (สมชื่อ) อ่อนโยน, ขี้อ้อน, และมักจะเดินตามเจ้าของ",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 5,
+        "energyLevel": 2,
+        "grooming": 3
+      }
+    },
+    {
+      "id": 9,
+      "name": "เบงกอล (Bengal)",
+      "image_url": "https://placehold.co/600x400/D4D4A5/FFFFFF?text=Bengal",
+      "description": "แมวลายเสือดาวที่กระตือรือร้น, ฉลาด, และมั่นใจในตัวเองสูง ต้องการพื้นที่และกิจกรรมให้เล่น",
+      "ratings": {
+        "friendliness": 4,
+        "adaptability": 3,
+        "energyLevel": 5,
+        "grooming": 1
+      }
+    },
+    {
+      "id": 10,
+      "name": "อเมริกัน ชอร์ตแฮร์ (American Shorthair)",
+      "image_url": "https://placehold.co/600x400/C0A5D4/FFFFFF?text=American+Shorthair",
+      "description": "แมวพันธุ์พื้นเมืองอเมริกาที่ปรับตัวเก่ง, ใจเย็น, และเป็นนักล่าหนูโดยธรรมชาติ",
+      "ratings": {
+        "friendliness": 4,
+        "adaptability": 5,
+        "energyLevel": 3,
+        "grooming": 1
+      }
+    },
+    {
+      "id": 11,
+      "name": "นอร์วีเจียน ฟอเรสต์ (Norwegian Forest Cat)",
+      "image_url": "https://placehold.co/600x400/A5D4C0/FFFFFF?text=Norwegian+Forest",
+      "description": "แมวป่าจากนอร์เวย์ ขนยาวสองชั้น, แข็งแรง, และชอบปีนป่ายสูง นิสัยอดทนและเป็นมิตร",
+      "ratings": {
+        "friendliness": 4,
+        "adaptability": 4,
+        "energyLevel": 4,
+        "grooming": 3
+      }
+    },
+    {
+      "id": 12,
+      "name": "อะบิสซิเนียน (Abyssinian)",
+      "image_url": "https://placehold.co/600x400/D4A5A5/FFFFFF?text=Abyssinian",
+      "description": "แมวที่สง่างามและฉลาดมาก มีพลังงานสูง, ขี้สงสัย, และไม่ชอบอยู่นิ่ง",
+      "ratings": {
+        "friendliness": 4,
+        "adaptability": 3,
+        "energyLevel": 5,
+        "grooming": 1
+      }
+    },
+    {
+      "id": 13,
+      "name": "วิเชียรมาศ (Khao Manee)",
+      "image_url": "https://placehold.co/600x400/A5A5D4/FFFFFF?text=Khao+Manee",
+      "description": "แมวไทยมงคลขนสีขาวตาสองสี (หรือสีฟ้า/เหลือง) นิสัยขี้เล่น, ฉลาด, และชอบเข้าสังคม",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 4,
+        "energyLevel": 4,
+        "grooming": 1
+      }
+    },
+    {
+      "id": 14,
+      "name": "เอ็กโซติก ชอร์ตแฮร์ (Exotic Shorthair)",
+      "image_url": "https://placehold.co/600x400/D4C0A5/FFFFFF?text=Exotic+Shorthair",
+      "description": "เหมือนแมวเปอร์เซียแต่ขนสั้น ดูแลง่ายกว่า นิสัยเงียบ, อ่อนโยน, และขี้อ้อน",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 4,
+        "energyLevel": 2,
+        "grooming": 2
+      }
+    },
+    {
+      "id": 15,
+      "name": "รัสเซียน บลู (Russian Blue)",
+      "image_url": "https://placehold.co/600x400/A5B6D4/FFFFFF?text=Russian+Blue",
+      "description": "แมวขนสีเทาเงินตาสีเขียว นิสัยสงวนท่าทีกับคนแปลกหน้า แต่จะอ่อนโยนและภักดีกับเจ้าของ",
+      "ratings": {
+        "friendliness": 3,
+        "adaptability": 4,
+        "energyLevel": 3,
+        "grooming": 2
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "id": 1,
+      "catId": 1,
+      "userId": 101,
+      "authorName": "ทาสแมวหมายเลข1 (Member)",
+      "date": "2025-11-10T14:30:00Z",
+      "comment": "น้องน่ารักมากครับ ขี้อ้อนสุดๆ แต่ต้องมีเวลาเล่นด้วยเยอะๆ เลยครับ #เลี้ยงง่าย #มือใหม่หัดเลี้ยง",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 4,
+        "energyLevel": 4,
+        "grooming": 2
+      },
+      "tags": [
+        "เลี้ยงง่าย",
+        "มือใหม่หัดเลี้ยง"
+      ],
+      "upVotes": 12,
+      "downVotes": 1
+    },
+    {
+      "id": 2,
+      "catId": 1,
+      "userId": 101,
+      "authorName": "ทาสแมวหมายเลข1 (Member)",
+      "date": "2025-11-05T09:15:00Z",
+      "comment": "ยืนยันอีกเสียงว่าขี้อ้อนมากครับ แต่มีปัญหาเรื่องข้อหูเล็กน้อย ต้องคอยดูแลเป็นพิเศษหน่อยครับ",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 3,
+        "energyLevel": 3,
+        "grooming": 3
+      },
+      "tags": [],
+      "upVotes": 5,
+      "downVotes": 0
+    },
+    {
+      "id": 3,
+      "catId": 2,
+      "userId": 101,
+      "authorName": "ทาสแมวหมายเลข1 (Member)",
+      "date": "2025-10-28T18:00:00Z",
+      "comment": "ใจเย็นมากกก แทบไม่ส่งเสียงร้องเลยครับ เหมาะกับคนอยู่คอนโดที่ไม่ค่อยมีเวลาดูแลขนมาก #เสียงไม่ดัง",
+      "ratings": {
+        "friendliness": 4,
+        "adaptability": 5,
+        "energyLevel": 2,
+        "grooming": 1
+      },
+      "tags": [
+        "เสียงไม่ดัง"
+      ],
+      "upVotes": 20,
+      "downVotes": 2
+    },
+    {
+      "catId": "2",
+      "userId": 101,
+      "authorName": "member",
+      "date": "2025-11-16T12:44:58.362Z",
+      "comment": "D",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 5,
+        "energyLevel": 5,
+        "grooming": 5
+      },
+      "tags": [
+        "#เลี้ยงง่าย"
+      ],
+      "upVotes": 0,
+      "downVotes": 0,
+      "id": 4
+    },
+    {
+      "catId": "6",
+      "userId": 101,
+      "authorName": "member",
+      "date": "2025-11-16T12:45:10.845Z",
+      "comment": "D",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 5,
+        "energyLevel": 5,
+        "grooming": 5
+      },
+      "tags": [
+        "#ขี้อ้อน"
+      ],
+      "upVotes": 0,
+      "downVotes": 0,
+      "id": 5
+    },
+    {
+      "catId": "1",
+      "userId": 101,
+      "authorName": "member",
+      "date": "2025-11-16T12:46:42.598Z",
+      "comment": "D",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 5,
+        "energyLevel": 5,
+        "grooming": 5
+      },
+      "tags": [
+        "#มือใหม่หัดเลี้ยง"
+      ],
+      "upVotes": 0,
+      "downVotes": 0,
+      "id": 6
+    },
+    {
+      "catId": "1",
+      "userId": 1000,
+      "authorName": "peerapong",
+      "date": "2025-11-16T13:07:18.470Z",
+      "comment": "GoodBoy",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 5,
+        "energyLevel": 5,
+        "grooming": 5
+      },
+      "tags": [
+        "#เลี้ยงง่าย"
+      ],
+      "upVotes": 0,
+      "downVotes": 0,
+      "id": 7
+    },
+    {
+      "catId": "2",
+      "userId": 1000,
+      "authorName": "peerapong",
+      "date": "2025-11-16T13:07:28.159Z",
+      "comment": "D",
+      "ratings": {
+        "friendliness": 5,
+        "adaptability": 5,
+        "energyLevel": 5,
+        "grooming": 5
+      },
+      "tags": [
+        "#มือใหม่หัดเลี้ยง"
+      ],
+      "upVotes": 0,
+      "downVotes": 0,
+      "id": 8
+    }
+  ],
+  "qas": [],
+  "users": [
+    {
+      "id": 101,
+      "username": "member",
+      "password": "123",
+      "role": "member",
+      "email": "member@catbreed.com"
+    },
+    {
+      "id": 999,
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "email": "admin@catbreed.com"
+    },
+    {
+      "username": "peerapong",
+      "password": "peerapong",
+      "email": "p.rapong.2409@gmail.com",
+      "role": "member",
+      "id": 1000
+    },
+    {
+      "username": "peerapong",
+      "password": "peerapong",
+      "email": "p.rapong.2409@gmail.com",
+      "role": "member",
+      "id": 1001
+    }
+  ]
+}
