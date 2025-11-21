@@ -111,12 +111,6 @@ const CatDetailPage = () => {
         <p className="text-gray-700 text-lg leading-relaxed mb-4">
           {breedDetails.description || 'รายละเอียดของสายพันธุ์นี้...'}
         </p>
-        
-        <div className="p-4 bg-gray-50 rounded-lg border">
-          <h4 className="font-semibold text-gray-700 mb-2">ข้อมูลเพิ่มเติม (Admin-Managed):</h4>
-          <p className="text-sm text-gray-600">ค่าใช้จ่ายโดยประมาณ: (เร็วๆ นี้)</p>
-          <p className="text-sm text-gray-600">นิสัย: (เร็วๆ นี้)</p>
-        </div>
       </section>
 
       <ReviewList reviews={reviews} />
@@ -137,14 +131,6 @@ const CatDetailPage = () => {
         </div>
       )}
 
-      <section className="mt-10">
-        <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-          ถาม-ตอบ ประจำสายพันธุ์ ({qas.length})
-        </h3>
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <p className="text-gray-500">(ฟีเจอร์ ถาม-ตอบ เร็วๆ นี้)</p>
-        </div>
-      </section>
     </div>
   );
 };

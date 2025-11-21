@@ -55,29 +55,6 @@ const TagInput = ({ selectedTags, onChange }) => {
         </div>
       </div>
 
-      <div>
-        <label htmlFor="customTag" className="block text-sm font-medium text-gray-700 mb-2">
-          หรือเพิ่มแท็กของคุณเอง:
-        </label>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            id="customTag"
-            value={customTagInput}
-            onChange={(e) => setCustomTagInput(e.target.value)}
-            className="flex-grow border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-300 text-base"
-            placeholder="เช่น: #ตาสองสี"
-          />
-          <button
-            type="button"
-            onClick={handleAddCustomTag}
-            className="bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 flex items-center"
-          >
-            <PlusIcon className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
       {selectedTags.length > 0 && (
         <div className="border-t pt-3">
           <span className="text-sm font-medium text-gray-700">แท็กของคุณ:</span>

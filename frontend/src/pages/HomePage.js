@@ -4,7 +4,6 @@ import Button from '../components/common/Button.js';
 import { getCats } from '../api/catApi.js';
 import BreedCard from '../components/breed/BreedCard.js';
 import LoadingSpinner from '../components/common/LoadingSpinner.js';
-import SearchBar from '../components/common/SearchBar.js';
 
 const HomePage = () => {
   const [featuredCats, setFeaturedCats] = useState([]);
@@ -27,14 +26,6 @@ const HomePage = () => {
     };
     fetchFeaturedCats();
   }, []);
-
-  const handleSearchSubmit = (query) => {
-    if (query) {
-      navigate(`/cats?q=${encodeURIComponent(query)}`);
-    } else {
-      navigate('/cats');
-    }
-  };
 
   const renderFeaturedCats = () => {
     if (loading) {
@@ -63,20 +54,7 @@ const HomePage = () => {
           <br />
           ได้อย่างมั่นใจก่อนรับเลี้ยง
         </p>
-
-        <div className="mt-8 mb-6 max-w-lg mx-auto">
-          <SearchBar
-            onSearch={handleSearchSubmit}
-            placeholder="ค้นหาสายพันธุ์ที่คุณสนใจ..."
-            className="shadow-lg"
-          />
-        </div>
         
-        <Link to="/cats">
-          <Button variant="primary" className="text-lg px-8 py-3">
-            ดูสายพันธุ์แมวทั้งหมด
-          </Button>
-        </Link>
       </section>
 
       <section className="mb-12">

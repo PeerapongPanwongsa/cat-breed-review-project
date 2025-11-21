@@ -2,10 +2,10 @@ import React from 'react';
 
 const RatingInput = ({ ratings, onChange }) => {
   const aspects = [
-    { id: 'friendliness', label: 'ความเป็นมิตร / ความขี้อ้อน' },
-    { id: 'adaptability', label: 'การปรับตัว (กับเด็ก/สัตว์อื่น)' },
-    { id: 'energyLevel', label: 'ระดับพลังงาน / ความขี้เล่น' },
-    { id: 'grooming', label: 'การดูแลขน (Grooming)' },
+    { id: 'friendly', label: 'ความเป็นมิตร' },
+    { id: 'easy_to_care', label: 'ความง่ายในการเลี้ยง' },
+    { id: 'energyLevel', label: ' ความขี้เล่น' },
+    { id: 'Care', label: 'การดูแล' },
   ];
 
   const handleRatingChange = (aspectId, value) => {

@@ -363,6 +363,13 @@
       "email": "p.rapong.2409@gmail.com",
       "role": "member",
       "id": 1001
+    },
+    {
+      "username": "member",
+      "password": "member",
+      "email": "member@gmai.com",
+      "role": "member",
+      "id": 1002
     }
   ]
 }
