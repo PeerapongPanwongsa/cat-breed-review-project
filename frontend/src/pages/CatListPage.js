@@ -7,12 +7,20 @@ import useApi from '../hooks/useApi.js';
 import SearchBar from '../components/common/SearchBar.js';
 
 const CatListPage = () => {
-  const { data: cats, loading, error, request: fetchCats } = useApi(getCats);
+  const { data: responseData, loading, error, request: fetchCats } = useApi(getCats);
   const [searchParams] = useSearchParams();
+
+  // 1. ดึงข้อมูลดิบ
+  const rawCats = responseData?.data || (Array.isArray(responseData) ? responseData : []);
+
+  // 2. (เพิ่มใหม่) เรียงลำดับข้อมูล A-Z (ภาษาไทย + อังกฤษ)
+  const cats = [...rawCats].sort((a, b) => 
+    a.name.localeCompare(b.name, 'th', { sensitivity: 'base' })
+  );
 
   useEffect(() => {
     const query = searchParams.get('q');
-    
+    // (หมายเหตุ: ตอนนี้ Backend ยังไม่รองรับการค้นหาด้วย 'q' แต่เราส่งไปก่อนได้)
     if (query) {
       fetchCats({ q: query });
     } else {
@@ -39,14 +47,16 @@ const CatListPage = () => {
       
       {error && <div className="text-center text-red-500 p-4 bg-red-100 rounded-lg">{error}</div>}
       
-      {!loading && !error && cats && (
+      {!loading && !error && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {cats.length > 0 ? (
             cats.map((breed) => (
               <BreedCard key={breed.id} breed={breed} />
             ))
           ) : (
-            <p className="text-gray-600 col-span-full text-center">ไม่พบสายพันธุ์แมวที่ตรงเงื่อนไข</p>
+            <p className="text-gray-600 col-span-full text-center">
+              ไม่พบข้อมูลสายพันธุ์แมว (หรือ Backend ยังไม่ส่งข้อมูลมา)
+            </p>
           )}
         </div>
       )}

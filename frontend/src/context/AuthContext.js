@@ -11,62 +11,88 @@ export const AuthProvider = ({ children }) => {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('user');
-      const storedFavs = localStorage.getItem('favorites');
-      const storedTime = localStorage.getItem('loginTime');
-
-      if (storedUser && storedTime) {
-        const loginTime = parseInt(storedTime, 10);
-        const now = new Date().getTime();
-
-        if (now - loginTime > LOGIN_EXPIRATION_MS) {
-          console.log("Login expired. Logging out.");
-          localStorage.removeItem('user');
-          localStorage.removeItem('favorites');
-          localStorage.removeItem('loginTime');
-        } else {
-          console.log("Restoring session...");
-          setUser(JSON.parse(storedUser));
-          if (storedFavs) {
-            setFavorites(JSON.parse(storedFavs));
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load state from localStorage", error);
-    } finally {
-      setLoading(false);
+  // --- ฟังก์ชันช่วยเช็ค Admin ---
+  const checkIsAdmin = (userData) => {
+    if (!userData) return false;
+    if (userData.roles && Array.isArray(userData.roles)) {
+      return userData.roles.includes('admin');
     }
+    return userData.role === 'admin';
+  };
+
+  // --- ฟังก์ชันดึงข้อมูล Favorites จาก API ---
+  const fetchFavorites = async () => {
+    try {
+      const response = await apiClient.get('/favorites');
+      // ถ้าไม่มี favorite backend อาจส่ง null หรือ [], กันไว้ก่อน
+      setFavorites(response.data.favorites || []);
+    } catch (error) {
+      console.error("Failed to fetch favorites", error);
+      setFavorites([]);
+    }
+  };
+
+  // --- useEffect: ตรวจสอบ Session เมื่อเปิดหน้าเว็บ ---
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        // 1. เช็ค User
+        const response = await apiClient.get('/auth/me');
+        setUser(response.data.user);
+        
+        // 2. ถ้ามี User ให้ดึง Favorites ต่อเลย
+        await fetchFavorites();
+
+      } catch (e) {
+        setUser(null);
+        setFavorites([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkSession();
   }, []);
 
-  const login = async (username, password) => {
-    console.log('Attempting login with API for:', username);
-    
+  // --- ฟังก์ชันจัดการ Favorites (ยิง API) ---
+  const toggleFavoriteApi = async (catId) => {
     try {
-      const response = await apiClient.get('/users', {
-        params: {
-          username: username,
-          password: password
-        }
+        const response = await apiClient.post(`/favorites/${catId}`);
+        const isFavorited = response.data.favorited;
+        
+        // อัปเดต State ทันทีตามผลลัพธ์จาก Server
+        setFavorites(prev => {
+            if (isFavorited) {
+                // ถ้า Server บอกว่าชอบแล้ว -> เพิ่ม ID เข้าไป (ถ้ายังไม่มี)
+                return prev.includes(catId) ? prev : [...prev, catId];
+            } else {
+                // ถ้า Server บอกว่าเลิกชอบแล้ว -> ลบ ID ออก
+                return prev.filter(id => id !== catId);
+            }
+        });
+    } catch (err) {
+        console.error("Failed to toggle favorite", err);
+    }
+  };
+
+  // เชื่อมโยงฟังก์ชันที่ Component เรียกใช้ เข้ากับ API ของเรา
+  const addFavorite = (catId) => toggleFavoriteApi(catId);
+  const removeFavorite = (catId) => toggleFavoriteApi(catId);
+
+  const login = async (username, password) => {
+    try {
+      const response = await apiClient.post('/auth/login', {
+        username,
+        password
       });
 
-      if (response.data && response.data.length > 0) {
-        const userData = response.data[0];
-        
-        setUser(userData);
-        setFavorites([]);
-
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('favorites', JSON.stringify([]));
-        localStorage.setItem('loginTime', new Date().getTime().toString());
-
+      if (response.data && response.data.user) {
+        setUser(response.data.user);
+        // ล็อกอินเสร็จ ดึงรายการโปรดทันที
+        await fetchFavorites(); 
         return true;
-      } else {
-        console.warn("Login failed: Invalid username or password");
-        return false;
       }
+      return false;
 
     } catch (error) {
       console.error("Login API error:", error);
@@ -74,44 +100,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+        await apiClient.post('/auth/logout');
+    } catch (e) { console.error(e); }
     setUser(null);
     setFavorites([]);
-    try {
-      localStorage.removeItem('user');
-      localStorage.removeItem('favorites');
-      localStorage.removeItem('loginTime');
-    } catch (error) {
-      console.error("Failed to clear localStorage", error);
-    }
   };
 
-  const addFavorite = (catId) => {
-    setFavorites((prevFavorites) => {
-      const newFavs = [...prevFavorites, catId];
-      localStorage.setItem('favorites', JSON.stringify(newFavs));
-      return newFavs;
-    });
-    console.log("Added to favorites:", catId);
-  };
-
-  const removeFavorite = (catId) => {
-    setFavorites((prevFavorites) => {
-      const newFavs = prevFavorites.filter((id) => id !== catId);
-      localStorage.setItem('favorites', JSON.stringify(newFavs));
-      return newFavs;
-    });
-    console.log("Removed from favorites:", catId);
-  };
-
-  const isFavorited = (catId) => {
-    return favorites.includes(catId);
-  };
+  const isFavorited = (catId) => favorites.includes(catId);
 
   const value = {
     user,
     isLoggedIn: !!user,
-    isAdmin: user?.role === 'admin',
+    isAdmin: checkIsAdmin(user), 
     login,
     logout,
     favorites,
@@ -120,9 +122,7 @@ export const AuthProvider = ({ children }) => {
     isFavorited,
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  if (loading) return <LoadingSpinner />;
 
   return (
     <AuthContext.Provider value={value}>

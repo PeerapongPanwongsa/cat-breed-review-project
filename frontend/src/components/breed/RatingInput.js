@@ -1,11 +1,13 @@
 import React from 'react';
+import { StarIcon } from '@heroicons/react/20/solid';
 
 const RatingInput = ({ ratings, onChange }) => {
+  // (แก้ไข: เปลี่ยน id ให้ตรงกับ State ใน ReviewForm.js)
   const aspects = [
-    { id: 'friendly', label: 'ความเป็นมิตร' },
-    { id: 'easy_to_care', label: 'ความง่ายในการเลี้ยง' },
-    { id: 'energyLevel', label: ' ความขี้เล่น' },
-    { id: 'Care', label: 'การดูแล' },
+    { id: 'friendliness', label: 'ความเป็นมิตร:' },
+    { id: 'adaptability', label: 'ความง่ายในการเลี้ยง:' },
+    { id: 'energyLevel', label: 'ความขี้เล่น:' },
+    { id: 'grooming', label: 'การดูแล:' },
   ];
 
   const handleRatingChange = (aspectId, value) => {
@@ -15,6 +17,7 @@ const RatingInput = ({ ratings, onChange }) => {
     });
   };
 
+  // (ส่วน StarRating และ return เหมือนเดิม)
   const StarRating = ({ aspectId, value }) => {
     return (
       <div className="flex space-x-1">

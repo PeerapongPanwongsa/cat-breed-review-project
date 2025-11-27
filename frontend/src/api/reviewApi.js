@@ -1,15 +1,18 @@
 import apiClient from './axiosConfig.js';
 
 export const postReview = (reviewData) => {
-  return apiClient.post('/reviews', reviewData);
+  const payload = {
+    breed_id: parseInt(reviewData.catId),
+    message: reviewData.comment,
+    ratings: reviewData.ratings, 
+    tags: reviewData.tags,       
+  };
+
+  return apiClient.post('/discussions', payload);
 };
 
 export const getReviewsByUserId = (userId) => {
-  return apiClient.get('/reviews', {
-    params: {
-      userId: userId
-    }
-  });
+  return apiClient.get('/discussions/me'); 
 };
 
 export const registerUser = (userData) => {
@@ -18,9 +21,20 @@ export const registerUser = (userData) => {
 };
 
 export const deleteReview = (reviewId) => {
-  return apiClient.delete(`/reviews/${reviewId}`);
+  return apiClient.delete(`/discussions/${reviewId}`);
 };
 
 export const updateReview = (reviewId, reviewData) => {
-  return apiClient.put(`/reviews/${reviewId}`, reviewData);
+  const payload = {
+    message: reviewData.comment,
+    ratings: reviewData.ratings,
+    tags: reviewData.tags,
+  };
+  return apiClient.put(`/discussions/${reviewId}`, payload);
+};
+
+export const toggleReaction = (reviewId, reactionType) => {
+  return apiClient.post(`/discussions/${reviewId}/react`, { 
+    reaction_type: reactionType 
+  });
 };

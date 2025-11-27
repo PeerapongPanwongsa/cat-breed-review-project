@@ -12,7 +12,7 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/'); 
   };
 
   if (!user) {

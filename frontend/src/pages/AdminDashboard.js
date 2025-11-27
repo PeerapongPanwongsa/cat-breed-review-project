@@ -1,38 +1,34 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
-import Button from '../components/common/Button';
+import AdminCatList from '../components/admin/AdminCatList';
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
-  if (!user || user.role !== 'admin') {
+  // (แก้ตรงนี้: ใช้ isAdmin)
+  if (!user || !isAdmin) {
     return (
-      <div className="text-center text-red-500">
+      <div className="text-center text-red-500 mt-10">
         คุณไม่มีสิทธิ์เข้าถึงหน้านี้
       </div>
     );
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        หน้าจัดการสำหรับ Admin
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        Dashboard ผู้ดูแลระบบ
       </h1>
+      <p className="text-gray-600 mb-8">
+        จัดการข้อมูลสายพันธุ์แมวและตรวจสอบความเรียบร้อย
+      </p>
 
-      <section className="bg-white p-6 rounded-lg shadow-md border mb-8">
-        <h2 className="text-xl font-semibold mb-4">จัดการสายพันธุ์แมว</h2>
-        <Button variant="primary">เพิ่มสายพันธุ์แมวใหม่</Button>
-        <div className="mt-4">
-          <p>ตารางข้อมูลแมว...</p>
-        </div>
+      <section className="mb-12">
+        {/* ตารางจัดการแมวอยู่ที่นี่ */}
+        <AdminCatList />
       </section>
-
-      <section className="bg-white p-6 rounded-lg shadow-md border">
-        <h2 className="text-xl font-semibold mb-4">จัดการรีวิว (รีวิวที่ถูกรายงาน)</h2>
-        <div className="mt-4">
-          <p>รายการรีวิวที่รอการตรวจสอบ...</p>
-        </div>
-      </section>
+      
+      {/* ... ส่วนอื่นๆ ... */}
     </div>
   );
 };
