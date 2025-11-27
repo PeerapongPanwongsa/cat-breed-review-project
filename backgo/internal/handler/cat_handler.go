@@ -14,26 +14,31 @@ import (
 
 // GetAllCatsHandler handles GET /api/cats
 func GetAllCatsHandler(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+    limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+    offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+    
+    // (1) เพิ่มบรรทัดนี้: รับคำค้นหาจาก URL parameter 'q'
+    search := c.DefaultQuery("q", "") 
 
-	// Get current user ID if authenticated
-	var currentUserID *int
-	if userID, exists := c.Get("user_id"); exists {
-		uid := userID.(int)
-		currentUserID = &uid
-	}
+    // Get current user ID if authenticated
+    var currentUserID *int
+    if userID, exists := c.Get("user_id"); exists {
+        uid := userID.(int)
+        currentUserID = &uid
+    }
 
-	cats, err := infoDB.GetAllCats(currentUserID, limit, offset)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+    // (2) แก้ไขบรรทัดนี้: ส่ง 'search' เข้าไปเป็น parameter ตัวที่ 4
+    cats, err := infoDB.GetAllCats(currentUserID, limit, offset, search)
+    
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
 
-	c.JSON(http.StatusOK, gin.H{
-		"data":  cats,
-		"count": len(cats),
-	})
+    c.JSON(http.StatusOK, gin.H{
+        "data":  cats,
+        "count": len(cats),
+    })
 }
 
 // GetCatHandler handles GET /api/cats/:id
@@ -359,4 +364,66 @@ func ToggleDiscussionReactionHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// GetMyDiscussionsHandler handles GET /api/discussions/me
+func GetMyDiscussionsHandler(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	discussions, err := infoDB.GetDiscussionsByUserID(userID.(int))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, discussions)
+}
+
+// ToggleFavoriteHandler POST /api/favorites/:catId
+func ToggleFavoriteHandler(c *gin.Context) {
+    userID, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+    
+    catID, err := strconv.Atoi(c.Param("id"))
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+        return
+    }
+
+    isFavorited, err := infoDB.ToggleFavorite(userID.(int), catID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{"favorited": isFavorited})
+}
+
+// GetFavoritesHandler GET /api/favorites
+func GetFavoritesHandler(c *gin.Context) {
+    userID, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        return
+    }
+
+    favorites, err := infoDB.GetUserFavorites(userID.(int))
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+
+    // ถ้าไม่มี favorite ให้ส่ง array ว่าง []
+    if favorites == nil {
+        favorites = []int{}
+    }
+
+    c.JSON(http.StatusOK, gin.H{"favorites": favorites})
 }

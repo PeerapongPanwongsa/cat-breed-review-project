@@ -1,11 +1,12 @@
 package main
 
-import(
+import (
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
+
 	"os"
+	"time"
 
 	"backgo/internal/handler"
 	"backgo/internal/infoDB"
@@ -13,7 +14,6 @@ import(
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
-	"github.com/gin-contrib/cors"
 )
 
 func getEnv(key, defaultValue string) string {
@@ -41,13 +41,8 @@ func initDB() {
 		log.Fatal("Failed to open database:", err)
 	}
 
-	// กำหนดจำนวน Connection สูงสุด
 	db.SetMaxOpenConns(25)
-
-	// กำหนดจำนวน Idle connection สูงสุด
 	db.SetMaxIdleConns(20)
-
-	// กำหนดอายุของ Connection
 	db.SetConnMaxLifetime(5 * time.Minute)
 
 	err = db.Ping()
@@ -58,9 +53,18 @@ func initDB() {
 	log.Println("Connected to the database successfully!")
 }
 
+// ฟังก์ชันจัดการ CORS แบบยืดหยุ่น (รองรับทั้ง Localhost, 127.0.0.1 และ Codespace)
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		// 1. อ่านว่า Request มาจากเว็บไหน (Origin)
+		origin := c.Request.Header.Get("Origin")
+
+		// 2. ถ้ามี Origin ส่งมา ให้ตั้งค่า Allow-Origin เป็นเว็บนั้นเลย (Mirroring)
+		// (วิธีนี้ทำให้รองรับทั้ง http://localhost:3000 และ http://127.0.0.1:3000)
+		if origin != "" {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -74,19 +78,19 @@ func corsMiddleware() gin.HandlerFunc {
 	}
 }
 
-func main(){
+func main() {
 	initDB()
 	infoDB.SetDB(db)
 	defer db.Close()
 
 	r := gin.Default()
-	r.Use(cors.Default())
+	
+	// --- แก้ไขตรงนี้: ลบ r.Use(cors.Default()) ออก เพื่อไม่ให้ตีกัน ---
 	r.Use(corsMiddleware())
 
 	// ===================== PUBLIC ROUTES =====================
 	public := r.Group("/api")
 	{
-		// Health check
 		public.GET("/health", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"status":  "ok",
@@ -94,7 +98,6 @@ func main(){
 			})
 		})
 
-		// Auth routes
 		auth := public.Group("/auth")
 		{
 			auth.POST("/login", handler.LoginHandler)
@@ -102,7 +105,6 @@ func main(){
 			auth.POST("/logout", handler.LogoutHandler)
 		}
 
-		// Public cat routes (view only)
 		public.GET("/cats", handler.GetAllCatsHandler)
 		public.GET("/cats/:id", handler.GetCatHandler)
 		public.GET("/cats/:id/reactions", handler.GetCatReactionStatsHandler)
@@ -113,29 +115,27 @@ func main(){
 	user := r.Group("/api")
 	user.Use(middleware.AuthMiddleware())
 	{
-		// Current user info
 		user.GET("/auth/me", handler.GetMeHandler)
-
-		// Cat reactions (like/dislike)
+		user.GET("/discussions/me", handler.GetMyDiscussionsHandler)
 		user.POST("/cats/:id/react", handler.ToggleCatReactionHandler)
 
-		// Discussions (comments)
 		user.POST("/discussions", handler.CreateDiscussionHandler)
 		user.PUT("/discussions/:id", handler.UpdateDiscussionHandler)
 		user.DELETE("/discussions/:id", handler.DeleteDiscussionHandler)
 		user.POST("/discussions/:id/react", handler.ToggleDiscussionReactionHandler)
+
+		user.POST("/favorites/:id", handler.ToggleFavoriteHandler) 
+        user.GET("/favorites", handler.GetFavoritesHandler)        
 	}
 
 	// ===================== ADMIN ROUTES =====================
 	admin := r.Group("/api/admin")
 	admin.Use(middleware.AuthMiddleware(), middleware.RequireRole("admin"))
 	{
-		// Cat breed management
 		admin.POST("/cats", handler.CreateCatHandler)
 		admin.PUT("/cats/:id", handler.UpdateCatHandler)
 		admin.DELETE("/cats/:id", handler.DeleteCatHandler)
 	}
 
-	
 	r.Run(":8080")
 }

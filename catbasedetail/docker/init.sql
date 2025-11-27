@@ -89,6 +89,7 @@ CREATE TABLE cat_breeds (
     dislike_count INTEGER DEFAULT 0,
     discussion_count INTEGER DEFAULT 0,
     view_count INTEGER DEFAULT 0,
+    average_ratings JSONB DEFAULT '{}',
     
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -132,7 +133,9 @@ CREATE TABLE discussions (
     like_count INTEGER DEFAULT 0,
     dislike_count INTEGER DEFAULT 0,
     reply_count INTEGER DEFAULT 0,
-    
+    ratings JSONB DEFAULT '{}', 
+    tags TEXT[] DEFAULT '{}', 
+
     is_deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -438,3 +441,14 @@ WHERE name IN (
 UPDATE users
 SET last_login = CURRENT_TIMESTAMP
 WHERE id IN (1, 2, 3);
+
+-- ===================== USER FAVORITES =====================
+
+CREATE TABLE user_favorites (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    breed_id INTEGER NOT NULL REFERENCES cat_breeds(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, breed_id)
+);
+
+CREATE INDEX idx_user_favorites_user_id ON user_favorites(user_id);

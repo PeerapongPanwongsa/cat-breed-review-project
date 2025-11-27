@@ -1,79 +1,93 @@
 package infoDB
 
 import (
-	"time"
 	"database/sql"
+	"encoding/json"
+	"time"
+	"github.com/lib/pq"
 )
 
 // ===================== Cat Breed Models =====================
 
 type Cat struct {
-	ID          int       `json:"id"`
-	Name        string    `json:"name"`
-	Origin      string    `json:"origin"`
-	Description string    `json:"description"`
-	Care        string    `json:"care"`
-	ImageURL    string    `json:"image_url"`
+	ID              int       `json:"id"`
+	Name            string    `json:"name"`
+	Origin          string    `json:"origin"`
+	Description     string    `json:"description"`
+	Care            string    `json:"care"`
+	ImageURL        string    `json:"image_url"`
 	
-	// Engagement metrics
+	// Engagement metrics 
 	LikeCount       int `json:"like_count"`
 	DislikeCount    int `json:"dislike_count"`
 	DiscussionCount int `json:"discussion_count"`
 	ViewCount       int `json:"view_count"`
 	
 	// User's interaction (if logged in)
-	UserReaction *string `json:"user_reaction,omitempty"` // "like" or "dislike"
+	UserReaction *string `json:"user_reaction,omitempty"`
 	
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	CreatedBy *int      `json:"created_by,omitempty"`
+
+	// (เพิ่ม) รองรับค่าเฉลี่ยดาวจาก Database
+	AverageRatings map[string]float64 `json:"ratings"`
 }
 
 type CreateCatRequest struct {
-	Name        string `json:"name" binding:"required,min=2,max=255"`
-	Origin      string `json:"origin"`
-	Description string `json:"description"`
-	Care        string `json:"care"`
-	ImageURL    string `json:"image_url"`
+	Name            string `json:"name" binding:"required,min=2,max=255"`
+	Origin          string `json:"origin"`
+	Description     string `json:"description"`
+	Care            string `json:"care"`
+	ImageURL        string `json:"image_url"`
 }
 
 type UpdateCatRequest struct {
-	Name        string `json:"name" binding:"min=2,max=255"`
-	Origin      string `json:"origin"`
-	Description string `json:"description"`
-	Care        string `json:"care"`
-	ImageURL    string `json:"image_url"`
+	Name            string `json:"name" binding:"min=2,max=255"`
+	Origin          string `json:"origin"`
+	Description     string `json:"description"`
+	Care            string `json:"care"`
+	ImageURL        string `json:"image_url"`
 }
 
 // ===================== Discussion Models =====================
 
 type Discussion struct {
-	ID           int       `json:"id"`
-	BreedID      int       `json:"breed_id"`
-	UserID       int       `json:"user_id"`
-	Username     string    `json:"username"`
-	Message      string    `json:"message"`
-	ParentID     *int      `json:"parent_id,omitempty"`
+	ID             int          `json:"id"`
+	BreedID        int          `json:"breed_id"`
+	UserID         int          `json:"user_id"`
+	Username       string       `json:"username"`
+	Message        string       `json:"message"`
+	ParentID       *int         `json:"parent_id,omitempty"`
 	
-	LikeCount    int       `json:"like_count"`
-	DislikeCount int       `json:"dislike_count"`
-	ReplyCount   int       `json:"reply_count"`
+	LikeCount      int          `json:"like_count"`
+	DislikeCount   int          `json:"dislike_count"`
+	ReplyCount     int          `json:"reply_count"`
 	
-	UserReaction *string      `json:"user_reaction,omitempty"`
-	IsDeleted    bool         `json:"is_deleted"`
-	CreatedAt    time.Time    `json:"created_at"`
-	UpdatedAt    time.Time    `json:"updated_at"`
-	Replies      []Discussion `json:"replies,omitempty"`
+	UserReaction   *string      `json:"user_reaction,omitempty"`
+	IsDeleted      bool         `json:"is_deleted"`
+	CreatedAt      time.Time    `json:"created_at"`
+	UpdatedAt      time.Time    `json:"updated_at"`
+	Replies        []Discussion `json:"replies,omitempty"`
+
+	// (เพิ่ม) รองรับดาวและแท็ก
+	Ratings  map[string]int `json:"ratings"`
+	Tags     []string       `json:"tags"`
 }
 
 type CreateDiscussionRequest struct {
 	BreedID  int    `json:"breed_id" binding:"required"`
 	ParentID *int   `json:"parent_id"`
 	Message  string `json:"message" binding:"required,min=1,max=2000"`
+	// (เพิ่ม) รับค่าดาวและแท็กจาก Frontend
+	Ratings  map[string]int `json:"ratings"`
+	Tags     []string       `json:"tags"`
 }
 
 type UpdateDiscussionRequest struct {
-	Message string `json:"message" binding:"required,min=1,max=2000"`
+	Message string         `json:"message" binding:"required,min=1,max=2000"`
+	Ratings map[string]int `json:"ratings"`
+	Tags    []string       `json:"tags"`
 }
 
 // ===================== Reaction Models =====================
@@ -85,29 +99,32 @@ type ReactionResponse struct {
 }
 
 var db *sql.DB
-// ให้ main.go เรียกใช้ฟังก์ชันนี้หลังจาก initDB()
+
 func SetDB(d *sql.DB) {
 	db = d
 }
 
 // GET /cats
-func GetAllCats(currentUserID *int, limit, offset int) ([]Cat, error) {
+func GetAllCats(currentUserID *int, limit, offset int, search string) ([]Cat, error) {
 	var userID int
 	if currentUserID != nil {
 		userID = *currentUserID
 	}
 
+	// (เพิ่ม) ดึง average_ratings มาด้วย
 	rows, err := db.Query(`
 		SELECT 
 			cb.id, cb.name, cb.origin, cb.description, cb.care_instructions, cb.image_url,
 			cb.like_count, cb.dislike_count, cb.discussion_count, cb.view_count,
 			cb.created_at, cb.updated_at, cb.created_by,
+			cb.average_ratings, 
 			br.reaction_type as user_reaction
 		FROM cat_breeds cb
 		LEFT JOIN breed_reactions br ON cb.id = br.breed_id AND br.user_id = $1
+		WHERE ($4 = '' OR cb.name ILIKE '%' || $4 || '%')
 		ORDER BY cb.created_at DESC
 		LIMIT $2 OFFSET $3
-	`, userID, limit, offset)
+	`, userID, limit, offset, search)
 
 	if err != nil {
 		return nil, err
@@ -119,16 +136,23 @@ func GetAllCats(currentUserID *int, limit, offset int) ([]Cat, error) {
 		var cat Cat
 		var userReaction sql.NullString
 		var createdBy sql.NullInt64
+		var avgRatingsJSON []byte // ตัวแปรรับ JSON
 
 		err := rows.Scan(
 			&cat.ID, &cat.Name, &cat.Origin, &cat.Description,
 			&cat.Care, &cat.ImageURL,
 			&cat.LikeCount, &cat.DislikeCount, &cat.DiscussionCount, &cat.ViewCount,
 			&cat.CreatedAt, &cat.UpdatedAt, &createdBy,
+			&avgRatingsJSON, // Scan JSON
 			&userReaction,
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		// แปลง JSON กลับเป็น Map
+		if len(avgRatingsJSON) > 0 {
+			_ = json.Unmarshal(avgRatingsJSON, &cat.AverageRatings)
 		}
 
 		if userReaction.Valid {
@@ -147,7 +171,6 @@ func GetAllCats(currentUserID *int, limit, offset int) ([]Cat, error) {
 }
 
 // GET /cat
-
 func GetCat(id int, currentUserID *int) (Cat, error) {
 	var userID int
 	if currentUserID != nil {
@@ -157,12 +180,15 @@ func GetCat(id int, currentUserID *int) (Cat, error) {
 	var cat Cat
 	var userReaction sql.NullString
 	var createdBy sql.NullInt64
+	var avgRatingsJSON []byte
 
+	// (เพิ่ม) ดึง average_ratings
 	row := db.QueryRow(`
 		SELECT 
 			cb.id, cb.name, cb.origin, cb.description, cb.care_instructions, cb.image_url,
 			cb.like_count, cb.dislike_count, cb.discussion_count, cb.view_count,
 			cb.created_at, cb.updated_at, cb.created_by,
+			cb.average_ratings,
 			br.reaction_type as user_reaction
 		FROM cat_breeds cb
 		LEFT JOIN breed_reactions br ON cb.id = br.breed_id AND br.user_id = $1
@@ -174,11 +200,16 @@ func GetCat(id int, currentUserID *int) (Cat, error) {
 		&cat.Care, &cat.ImageURL,
 		&cat.LikeCount, &cat.DislikeCount, &cat.DiscussionCount, &cat.ViewCount,
 		&cat.CreatedAt, &cat.UpdatedAt, &createdBy,
+		&avgRatingsJSON,
 		&userReaction,
 	)
 
 	if err != nil {
 		return Cat{}, err
+	}
+
+	if len(avgRatingsJSON) > 0 {
+		_ = json.Unmarshal(avgRatingsJSON, &cat.AverageRatings)
 	}
 
 	if userReaction.Valid {
@@ -190,13 +221,12 @@ func GetCat(id int, currentUserID *int) (Cat, error) {
 		cat.CreatedBy = &cb
 	}
 
-	// Increment view count
 	db.Exec("UPDATE cat_breeds SET view_count = view_count + 1 WHERE id = $1", id)
 
 	return cat, nil
 }
 
-// GREATE /cat
+// CREATE /cat
 func CreateCat(userID int, req CreateCatRequest) (Cat, error) {
 	var cat Cat
 	var createdBy sql.NullInt64
@@ -265,6 +295,7 @@ func UpdateCat(catID int, req UpdateCatRequest) (Cat, error) {
 
 	return cat, nil
 }
+
 // DELETE /cat
 func DeleteCat(catID int) error {
 	result, err := db.Exec(`DELETE FROM cat_breeds WHERE id = $1`, catID)
@@ -279,9 +310,9 @@ func DeleteCat(catID int) error {
 
 	return nil
 }
-// ===================== Breed Reaction Functions =====================
 
-// ToggleCatReaction toggles like/dislike on a cat breed
+// ===================== Breed Reaction Functions =====================
+// (ส่วนนี้เหมือนเดิม)
 func ToggleCatReaction(catID, userID int, reactionType string) (ReactionResponse, error) {
 	if reactionType != "like" && reactionType != "dislike" {
 		return ReactionResponse{}, sql.ErrNoRows
@@ -300,13 +331,11 @@ func ToggleCatReaction(catID, userID int, reactionType string) (ReactionResponse
 
 	if existingReaction.Valid {
 		if existingReaction.String == reactionType {
-			// Remove reaction
 			_, err = db.Exec(`
 				DELETE FROM breed_reactions 
 				WHERE breed_id = $1 AND user_id = $2
 			`, catID, userID)
 		} else {
-			// Change reaction
 			_, err = db.Exec(`
 				UPDATE breed_reactions 
 				SET reaction_type = $1, updated_at = CURRENT_TIMESTAMP 
@@ -314,7 +343,6 @@ func ToggleCatReaction(catID, userID int, reactionType string) (ReactionResponse
 			`, reactionType, catID, userID)
 		}
 	} else {
-		// Add new reaction
 		_, err = db.Exec(`
 			INSERT INTO breed_reactions (breed_id, user_id, reaction_type) 
 			VALUES ($1, $2, $3)
@@ -325,7 +353,6 @@ func ToggleCatReaction(catID, userID int, reactionType string) (ReactionResponse
 		return ReactionResponse{}, err
 	}
 
-	// Get updated counts
 	var response ReactionResponse
 	var userReaction sql.NullString
 
@@ -350,7 +377,6 @@ func ToggleCatReaction(catID, userID int, reactionType string) (ReactionResponse
 	return response, err
 }
 
-// GetCatReactionStats gets reaction statistics for a cat breed
 func GetCatReactionStats(catID int, currentUserID *int) (ReactionResponse, error) {
 	var userID int
 	if currentUserID != nil {
@@ -383,17 +409,19 @@ func GetCatReactionStats(catID int, currentUserID *int) (ReactionResponse, error
 
 // ===================== Discussion Functions =====================
 
-// GetCatDiscussions retrieves all discussions for a cat breed
+// GetCatDiscussions
 func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Discussion, error) {
 	var userID int
 	if currentUserID != nil {
 		userID = *currentUserID
 	}
 
+	// (เพิ่ม) ดึง ratings และ tags
 	rows, err := db.Query(`
 		SELECT 
 			d.id, d.breed_id, d.user_id, u.username, d.parent_id,
 			d.message, d.like_count, d.dislike_count, d.reply_count,
+			d.ratings, d.tags,
 			d.is_deleted, d.created_at, d.updated_at,
 			dr.reaction_type as user_reaction
 		FROM discussions d
@@ -414,16 +442,26 @@ func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Disc
 		var discussion Discussion
 		var parentID sql.NullInt64
 		var userReaction sql.NullString
+		var ratingsJSON []byte       // รับ ratings
+		var tagsArray pq.StringArray // รับ tags
 
 		err := rows.Scan(
 			&discussion.ID, &discussion.BreedID, &discussion.UserID, &discussion.Username,
 			&parentID, &discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
-			&discussion.ReplyCount, &discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
+			&discussion.ReplyCount, 
+			&ratingsJSON, &tagsArray,
+			&discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
 			&userReaction,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		// แปลงข้อมูล
+		if len(ratingsJSON) > 0 {
+			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
+		}
+		discussion.Tags = []string(tagsArray)
 
 		if parentID.Valid {
 			pid := int(parentID.Int64)
@@ -444,7 +482,7 @@ func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Disc
 	return discussions, nil
 }
 
-// GetDiscussionReplies gets replies to a discussion
+// GetDiscussionReplies
 func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) ([]Discussion, error) {
 	var userID int
 	if currentUserID != nil {
@@ -455,6 +493,7 @@ func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) (
 		SELECT 
 			d.id, d.breed_id, d.user_id, u.username, d.parent_id,
 			d.message, d.like_count, d.dislike_count, d.reply_count,
+			d.ratings, d.tags,
 			d.is_deleted, d.created_at, d.updated_at,
 			dr.reaction_type as user_reaction
 		FROM discussions d
@@ -475,16 +514,25 @@ func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) (
 		var discussion Discussion
 		var parentIDVal sql.NullInt64
 		var userReaction sql.NullString
+		var ratingsJSON []byte
+		var tagsArray pq.StringArray
 
 		err := rows.Scan(
 			&discussion.ID, &discussion.BreedID, &discussion.UserID, &discussion.Username,
 			&parentIDVal, &discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
-			&discussion.ReplyCount, &discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
+			&discussion.ReplyCount, 
+			&ratingsJSON, &tagsArray,
+			&discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
 			&userReaction,
 		)
 		if err != nil {
 			return nil, err
 		}
+		
+		if len(ratingsJSON) > 0 {
+			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
+		}
+		discussion.Tags = []string(tagsArray)
 
 		if parentIDVal.Valid {
 			pid := int(parentIDVal.Int64)
@@ -501,61 +549,91 @@ func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) (
 	return discussions, nil
 }
 
-// CreateDiscussion creates a new discussion/comment
+// CreateDiscussion
 func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, error) {
 	var discussion Discussion
 	var parentID sql.NullInt64
+	
+	// แปลง Ratings เป็น JSON string
+	ratingsJSON, _ := json.Marshal(req.Ratings)
 
+	// (เพิ่ม) บันทึก ratings และ tags ลง Database
 	row := db.QueryRow(`
-		INSERT INTO discussions (breed_id, user_id, parent_id, message)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO discussions (breed_id, user_id, parent_id, message, ratings, tags)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, breed_id, user_id, parent_id, message, 
-		          like_count, dislike_count, reply_count, is_deleted, created_at, updated_at
-	`, req.BreedID, userID, req.ParentID, req.Message)
+				  ratings, tags,
+				  like_count, dislike_count, reply_count, is_deleted, created_at, updated_at
+	`, req.BreedID, userID, req.ParentID, req.Message, ratingsJSON, pq.Array(req.Tags))
+
+	var ratingsBytes []byte
+	var tagsArray pq.StringArray
 
 	err := row.Scan(
 		&discussion.ID, &discussion.BreedID, &discussion.UserID, &parentID,
-		&discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
+		&discussion.Message, 
+		&ratingsBytes, &tagsArray,
+		&discussion.LikeCount, &discussion.DislikeCount,
 		&discussion.ReplyCount, &discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
 	)
 
 	if err != nil {
 		return Discussion{}, err
 	}
+	
+	if len(ratingsBytes) > 0 {
+		json.Unmarshal(ratingsBytes, &discussion.Ratings)
+	}
+	discussion.Tags = []string(tagsArray)
 
 	if parentID.Valid {
 		pid := int(parentID.Int64)
 		discussion.ParentID = &pid
 	}
 
-	// Get username
 	db.QueryRow("SELECT username FROM users WHERE id = $1", userID).Scan(&discussion.Username)
 
 	return discussion, nil
 }
 
-// UpdateDiscussion updates a discussion
+// ... (UpdateDiscussion, DeleteDiscussion และส่วนอื่นๆ เหมือนเดิม) ...
+// UpdateDiscussion
 func UpdateDiscussion(discussionID, userID int, req UpdateDiscussionRequest) (Discussion, error) {
 	var discussion Discussion
 	var parentID sql.NullInt64
 
+	// แปลง Ratings เป็น JSON
+	ratingsJSON, _ := json.Marshal(req.Ratings)
+
+	// แก้ SQL Query: เพิ่ม SET ratings = $2, tags = $3
 	row := db.QueryRow(`
 		UPDATE discussions 
-		SET message = $1, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $2 AND user_id = $3
+		SET message = $1, ratings = $2, tags = $3, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $4 AND user_id = $5
 		RETURNING id, breed_id, user_id, parent_id, message, 
+		          ratings, tags,
 		          like_count, dislike_count, reply_count, is_deleted, created_at, updated_at
-	`, req.Message, discussionID, userID)
+	`, req.Message, ratingsJSON, pq.Array(req.Tags), discussionID, userID)
+
+	var ratingsBytes []byte
+	var tagsArray pq.StringArray
 
 	err := row.Scan(
 		&discussion.ID, &discussion.BreedID, &discussion.UserID, &parentID,
-		&discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
+		&discussion.Message, 
+		&ratingsBytes, &tagsArray,
+		&discussion.LikeCount, &discussion.DislikeCount,
 		&discussion.ReplyCount, &discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
 	)
 
 	if err != nil {
 		return Discussion{}, err
 	}
+
+	if len(ratingsBytes) > 0 {
+		json.Unmarshal(ratingsBytes, &discussion.Ratings)
+	}
+	discussion.Tags = []string(tagsArray)
 
 	if parentID.Valid {
 		pid := int(parentID.Int64)
@@ -567,7 +645,7 @@ func UpdateDiscussion(discussionID, userID int, req UpdateDiscussionRequest) (Di
 	return discussion, nil
 }
 
-// DeleteDiscussion soft deletes a discussion
+// DeleteDiscussion
 func DeleteDiscussion(discussionID, userID int, isAdmin bool) error {
 	var result sql.Result
 	var err error
@@ -598,7 +676,6 @@ func DeleteDiscussion(discussionID, userID int, isAdmin bool) error {
 	return nil
 }
 
-// ToggleDiscussionReaction toggles like/dislike on a discussion
 func ToggleDiscussionReaction(discussionID, userID int, reactionType string) (ReactionResponse, error) {
 	if reactionType != "like" && reactionType != "dislike" {
 		return ReactionResponse{}, sql.ErrNoRows
@@ -661,4 +738,97 @@ func ToggleDiscussionReaction(discussionID, userID int, reactionType string) (Re
 	}
 
 	return response, err
+}
+
+// GetDiscussionsByUserID ดึงรีวิวทั้งหมดของ User คนนึง
+func GetDiscussionsByUserID(userID int) ([]Discussion, error) {
+	rows, err := db.Query(`
+		SELECT 
+			d.id, d.breed_id, d.user_id, u.username, d.parent_id,
+			d.message, d.like_count, d.dislike_count, d.reply_count,
+			d.ratings, d.tags,
+			d.is_deleted, d.created_at, d.updated_at,
+			NULL as user_reaction -- (หน้า Profile ไม่จำเป็นต้องรู้ว่าเรากดไลค์ตัวเองไหม)
+		FROM discussions d
+		JOIN users u ON d.user_id = u.id
+		WHERE d.user_id = $1 AND d.is_deleted = FALSE
+		ORDER BY d.created_at DESC
+	`, userID)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var discussions []Discussion
+	for rows.Next() {
+		var discussion Discussion
+		var parentID sql.NullInt64
+		var userReaction sql.NullString
+		var ratingsJSON []byte
+		var tagsArray pq.StringArray
+
+		err := rows.Scan(
+			&discussion.ID, &discussion.BreedID, &discussion.UserID, &discussion.Username,
+			&parentID, &discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
+			&discussion.ReplyCount, 
+			&ratingsJSON, &tagsArray,
+			&discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
+			&userReaction,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(ratingsJSON) > 0 {
+			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
+		}
+		discussion.Tags = []string(tagsArray)
+
+		if parentID.Valid {
+			pid := int(parentID.Int64)
+			discussion.ParentID = &pid
+		}
+
+		discussions = append(discussions, discussion)
+	}
+	return discussions, nil
+}
+
+// ... (ต่อท้ายไฟล์)
+
+// ToggleFavorite เพิ่มหรือลบรายการโปรด
+func ToggleFavorite(userID, catID int) (bool, error) {
+    var exists bool
+    err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM user_favorites WHERE user_id=$1 AND breed_id=$2)", userID, catID).Scan(&exists)
+    if err != nil {
+        return false, err
+    }
+
+    if exists {
+        _, err = db.Exec("DELETE FROM user_favorites WHERE user_id=$1 AND breed_id=$2", userID, catID)
+        return false, err // false = ลบออกแล้ว
+    } else {
+        _, err = db.Exec("INSERT INTO user_favorites (user_id, breed_id) VALUES ($1, $2)", userID, catID)
+        return true, err // true = เพิ่มแล้ว
+    }
+}
+
+// GetUserFavorites ดึง ID ของแมวที่ user ชอบทั้งหมด
+func GetUserFavorites(userID int) ([]int, error) {
+    rows, err := db.Query("SELECT breed_id FROM user_favorites WHERE user_id=$1", userID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var favorites []int
+    for rows.Next() {
+        var id int
+        if err := rows.Scan(&id); err != nil {
+            return nil, err
+        }
+        favorites = append(favorites, id)
+    }
+    return favorites, nil
 }
