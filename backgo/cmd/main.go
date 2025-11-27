@@ -122,10 +122,7 @@ func main() {
 		user.POST("/discussions", handler.CreateDiscussionHandler)
 		user.PUT("/discussions/:id", handler.UpdateDiscussionHandler)
 		user.DELETE("/discussions/:id", handler.DeleteDiscussionHandler)
-		user.POST("/discussions/:id/react", handler.ToggleDiscussionReactionHandler)
-
-		user.POST("/favorites/:id", handler.ToggleFavoriteHandler) 
-        user.GET("/favorites", handler.GetFavoritesHandler)        
+		user.POST("/discussions/:id/react", handler.ToggleDiscussionReactionHandler)     
 	}
 
 	// ===================== ADMIN ROUTES =====================

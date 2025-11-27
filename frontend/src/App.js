@@ -8,7 +8,6 @@ import CatDetailPage from './pages/CatDetailPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminDashboard from './pages/AdminDashboard';
-import FavoritesPage from './pages/FavoritesPage';
 import PrivateRoute from './components/common/PrivateRoute';
 import ProfilePage from './pages/ProfilePage';
 
@@ -24,7 +23,6 @@ function App() {
           <Route path="/cats/:id" element={<CatDetailPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/favorites" element={<FavoritesPage />} /> 
 
           <Route element={<PrivateRoute requiredRole="member" />}>
             <Route path="/profile" element={<ProfilePage />} />

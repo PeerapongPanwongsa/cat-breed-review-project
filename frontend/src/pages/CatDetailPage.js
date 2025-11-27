@@ -10,44 +10,20 @@ import ReviewList from '../components/breed/ReviewList';
 import ReviewForm from '../components/breed/ReviewForm';
 import EditReviewModal from '../components/profile/EditReviewModal'; // Import Modal
 
-// (ฟังก์ชัน calculateNewAverages, getPopularTags เหมือนเดิมเป๊ะ ขอละไว้นะครับ ก๊อปจากไฟล์เก่าได้เลย หรือถ้าต้องการตัวเต็มบอกได้ครับ)
-// ...
-const calculateNewAverages = (oldReviews, newReview) => {
-    // ... (ใช้โค้ดเดิม)
-    const allReviews = [...oldReviews, newReview].filter(r => r && r.ratings);
-    const reviewCount = allReviews.length;
-    if (reviewCount === 0) return { friendliness: 0, adaptability: 0, energyLevel: 0, grooming: 0 };
-    const totalRatings = { friendliness: 0, adaptability: 0, energyLevel: 0, grooming: 0 };
-    for (const review of allReviews) {
-        if (review.ratings) {
-            totalRatings.friendliness += (review.ratings.friendliness || 0);
-            totalRatings.adaptability += (review.ratings.adaptability || 0);
-            totalRatings.energyLevel += (review.ratings.energyLevel || 0);
-            totalRatings.grooming += (review.ratings.grooming || 0);
-        }
-    }
-    return {
-        friendliness: totalRatings.friendliness / reviewCount,
-        adaptability: totalRatings.adaptability / reviewCount,
-        energyLevel: totalRatings.energyLevel / reviewCount,
-        grooming: totalRatings.grooming / reviewCount,
-    };
-};
-
 const getPopularTags = (reviews) => {
-    // ... (ใช้โค้ดเดิม)
-    if (!reviews || reviews.length === 0) return [];
-    const allTags = reviews.flatMap(review => review.tags || []);
-    const tagCounts = allTags.reduce((acc, tag) => {
-        acc[tag] = (acc[tag] || 0) + 1;
-        return acc;
-    }, {});
-    return Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 5);
+  // ... (ใช้โค้ดเดิม)
+  if (!reviews || reviews.length === 0) return [];
+  const allTags = reviews.flatMap(review => review.tags || []);
+  const tagCounts = allTags.reduce((acc, tag) => {
+    acc[tag] = (acc[tag] || 0) + 1;
+    return acc;
+  }, {});
+  return Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 5);
 };
 
 
 const CatDetailPage = () => {
-  const { id: catId } = useParams(); 
+  const { id: catId } = useParams();
   const { user } = useAuth();
   const [catData, setCatData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -77,7 +53,7 @@ const CatDetailPage = () => {
         comment: d.message,
         upVotes: d.like_count,
         downVotes: d.dislike_count,
-        ratings: d.ratings || null, 
+        ratings: d.ratings || null,
         tags: d.tags || [],
         userReaction: d.user_reaction
       }));
@@ -93,20 +69,19 @@ const CatDetailPage = () => {
   useEffect(() => {
     if (catId) fetchCat(catId);
   }, [catId]);
-
   const handleReviewSubmit = async (reviewData) => {
-    // ... (Logic Submit เดิม)
     try {
-        const response = await postReview(reviewData);
-        const newReview = { ...reviewData, id: response.data.id };
-        setCatData((prevData) => {
-            const newAverages = calculateNewAverages(prevData.reviews || [], newReview);
-            return { ...prevData, ratings: newAverages, reviews: [newReview, ...(prevData.reviews || [])] };
-        });
-        alert('ขอบคุณสำหรับรีวิวครับ!');
+      // 1. ส่งรีวิวไป Back-end
+      await postReview(reviewData);
+
+      // 2. 🚩 (แก้ไข) แทนที่จะคำนวณเอง ให้ดึงข้อมูลแมวใหม่ทั้งหมด
+      //    (Back-end ได้คำนวณและอัปเดต average_ratings ใน DB แล้ว)
+      await fetchCat(catId);
+
+      alert('ขอบคุณสำหรับรีวิวครับ!');
     } catch (err) {
-        console.error(err);
-        alert('เกิดข้อผิดพลาดในการส่งรีวิว');
+      console.error(err);
+      alert('เกิดข้อผิดพลาดในการส่งรีวิว');
     }
   };
 
@@ -114,37 +89,37 @@ const CatDetailPage = () => {
   const handleDeleteReview = async (reviewId) => {
     if (!window.confirm("ต้องการลบรีวิวนี้?")) return;
     try {
-        await deleteReview(reviewId);
-        setCatData(prev => ({
-            ...prev,
-            reviews: prev.reviews.filter(r => r.id !== reviewId)
-        }));
+      await deleteReview(reviewId);
+      setCatData(prev => ({
+        ...prev,
+        reviews: prev.reviews.filter(r => r.id !== reviewId)
+      }));
     } catch (err) {
-        alert("ลบไม่สำเร็จ");
+      alert("ลบไม่สำเร็จ");
     }
   };
 
   // (เพิ่ม) ฟังก์ชันเปิด Modal แก้ไข
   const handleEditReview = (review) => {
-      setReviewToEdit(review);
-      setIsModalOpen(true);
+    setReviewToEdit(review);
+    setIsModalOpen(true);
   };
 
   // (เพิ่ม) ฟังก์ชันอัปเดตหลังจากแก้ไขเสร็จ
   const onReviewUpdated = (updatedReview) => {
-      // แปลงข้อมูลกลับมาเป็น format ของ frontend
-      const mappedUpdated = {
-        ...updatedReview,
-        comment: updatedReview.comment || updatedReview.message,
-        catId: updatedReview.catId || updatedReview.breed_id,
-        ratings: updatedReview.ratings,
-        tags: updatedReview.tags
-      };
-      
-      setCatData(prev => ({
-          ...prev,
-          reviews: prev.reviews.map(r => r.id === mappedUpdated.id ? { ...r, ...mappedUpdated } : r)
-      }));
+    // แปลงข้อมูลกลับมาเป็น format ของ frontend
+    const mappedUpdated = {
+      ...updatedReview,
+      comment: updatedReview.comment || updatedReview.message,
+      catId: updatedReview.catId || updatedReview.breed_id,
+      ratings: updatedReview.ratings,
+      tags: updatedReview.tags
+    };
+
+    setCatData(prev => ({
+      ...prev,
+      reviews: prev.reviews.map(r => r.id === mappedUpdated.id ? { ...r, ...mappedUpdated } : r)
+    }));
   };
 
   if (loading) return <LoadingSpinner />;
@@ -167,10 +142,10 @@ const CatDetailPage = () => {
       </section>
 
       {/* (Review List - ส่ง props onEdit, onDelete ไปเพิ่ม) */}
-      <ReviewList 
-        reviews={reviews} 
-        onEdit={handleEditReview} 
-        onDelete={handleDeleteReview} 
+      <ReviewList
+        reviews={reviews}
+        onEdit={handleEditReview}
+        onDelete={handleDeleteReview}
       />
 
       {user ? (
@@ -183,11 +158,11 @@ const CatDetailPage = () => {
       )}
 
       {/* (Modal แก้ไข) */}
-      <EditReviewModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        reviewToEdit={reviewToEdit} 
-        onReviewUpdated={onReviewUpdated} 
+      <EditReviewModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        reviewToEdit={reviewToEdit}
+        onReviewUpdated={onReviewUpdated}
       />
     </div>
   );

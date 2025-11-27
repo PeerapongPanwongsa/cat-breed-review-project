@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { HeartIcon } from '@heroicons/react/24/outline';
 
 const Navbar = () => {
   // ดึง isAdmin มาใช้เลย
@@ -50,10 +49,6 @@ const Navbar = () => {
               <Link to="/register" className="bg-indigo-500 text-white px-4 py-2 rounded-full text-sm hover:bg-indigo-600">สมัครสมาชิก</Link>
             </>
           )}
-
-          <Link to="/favorites" className="relative text-gray-600 hover:text-indigo-500">
-            <HeartIcon className="w-6 h-6" />
-          </Link>
         </div>
       </div>
     </nav>
