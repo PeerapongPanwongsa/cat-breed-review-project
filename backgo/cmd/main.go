@@ -53,19 +53,32 @@ func initDB() {
 	log.Println("Connected to the database successfully!")
 }
 
-// ฟังก์ชันจัดการ CORS แบบยืดหยุ่น (รองรับทั้ง Localhost, 127.0.0.1 และ Codespace)
+// เพิ่ม URL ที่อนุญาตให้เข้าถึง (สำคัญสำหรับการใช้ withCredentials)
+var allowedOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000"}
+
+// ฟังก์ชันจัดการ CORS ที่ยืดหยุ่นสำหรับ Development
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 1. อ่านว่า Request มาจากเว็บไหน (Origin)
 		origin := c.Request.Header.Get("Origin")
 
-		// 2. ถ้ามี Origin ส่งมา ให้ตั้งค่า Allow-Origin เป็นเว็บนั้นเลย (Mirroring)
-		// (วิธีนี้ทำให้รองรับทั้ง http://localhost:3000 และ http://127.0.0.1:3000)
-		if origin != "" {
-			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		allowed := false
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				allowed = true
+				break
+			}
 		}
 
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		// ถ้า Origin ถูกส่งมา และถูกอนุญาต, ให้ Mirror Origin นั้นทันที และอนุญาต Credentials
+		if allowed {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true") 
+		} else if origin != "" {
+            // กรณีที่ Origin ไม่ตรง แต่มี Origin ส่งมา เราจะไม่ส่ง Allow-Credentials
+            c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+        }
+
+		// Header ที่เหลือเหมือนเดิม
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -85,7 +98,6 @@ func main() {
 
 	r := gin.Default()
 	
-	// --- แก้ไขตรงนี้: ลบ r.Use(cors.Default()) ออก เพื่อไม่ให้ตีกัน ---
 	r.Use(corsMiddleware())
 
 	// ===================== PUBLIC ROUTES =====================

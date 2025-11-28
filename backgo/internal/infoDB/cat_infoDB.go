@@ -163,7 +163,7 @@ func GetAllCats(currentUserID *int, limit, offset int, search string) ([]Cat, er
 		FROM cat_breeds cb
 		LEFT JOIN breed_reactions br ON cb.id = br.breed_id AND br.user_id = $1
 		WHERE ($4 = '' OR cb.name ILIKE '%' || $4 || '%')
-		ORDER BY cb.created_at DESC
+		ORDER BY cb.name ASC
 		LIMIT $2 OFFSET $3
 	`, userID, limit, offset, search)
 
@@ -886,5 +886,3 @@ func GetDiscussionsByUserID(userID int) ([]Discussion, error) {
 	}
 	return discussions, nil
 }
-
-// (ลบฟังก์ชัน ToggleFavorite และ GetUserFavorites ออกตามที่ผู้ใช้แจ้ง)
