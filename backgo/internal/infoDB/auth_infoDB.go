@@ -21,11 +21,19 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
+// UserInfo: ใช้สำหรับส่งกลับไป Frontend
 type UserInfo struct {
 	ID       int      `json:"id"`
 	Username string   `json:"username"`
 	Email    string   `json:"email"`
 	Roles    []string `json:"roles"`
+}
+
+// (✅ เพิ่ม Struct ใหม่สำหรับดึงข้อมูลพื้นฐาน)
+type UserBaseInfo struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
 }
 
 type LoginRequest struct {
@@ -43,6 +51,7 @@ type CustomClaims struct {
 	Roles    []string `json:"roles"`
 	jwt.RegisteredClaims
 }
+
 // ===================== JWT Secret =====================
 var jwtSecret = []byte("my-super-secret-key-change-in-production-2024")
 
@@ -118,7 +127,7 @@ func VerifyToken(tokenString string) (*CustomClaims, error) {
 func GetUserByUsername(username string) (User, error) {
 	var user User
 	query := `SELECT id, username, email, password_hash, is_active, created_at 
-	          FROM users WHERE username = $1`
+			  FROM users WHERE username = $1`
 
 	err := db.QueryRow(query, username).Scan(
 		&user.ID,
@@ -130,6 +139,20 @@ func GetUserByUsername(username string) (User, error) {
 	)
 
 	return user, err
+}
+
+// (✅ ฟังก์ชันใหม่: ดึงข้อมูลผู้ใช้จาก ID)
+// GetUserBaseInfoByID retrieves user's base info by ID
+func GetUserBaseInfoByID(userID int) (UserBaseInfo, error) {
+	var info UserBaseInfo
+	query := `SELECT id, username, email FROM users WHERE id = $1`
+
+	err := db.QueryRow(query, userID).Scan(
+		&info.ID,
+		&info.Username,
+		&info.Email,
+	)
+	return info, err
 }
 
 // GetUserRoles retrieves all roles for a user

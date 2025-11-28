@@ -95,18 +95,18 @@ func RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
-	// Get user details
-	user, err := infoDB.GetUserByUsername("") // You might want to create GetUserByID
+	// 🚩 FIX: Get user details using ID
+	userBaseInfo, err := infoDB.GetUserBaseInfoByID(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user details"})
 		return
 	}
 
-	// Get user roles
+	// 🚩 FIX: Get user roles live from DB
 	roles, _ := infoDB.GetUserRoles(userID)
 
 	// Generate new access token
-	accessToken, _ := infoDB.GenerateAccessToken(userID, user.Username, roles)
+	accessToken, _ := infoDB.GenerateAccessToken(userID, userBaseInfo.Username, roles)
 
 	// Set new access token cookie
 	c.SetCookie("access_token", accessToken, 900, "/", "", false, true)
@@ -136,22 +136,34 @@ func LogoutHandler(c *gin.Context) {
 
 // GetMeHandler handles GET /api/auth/me - Get current user info
 func GetMeHandler(c *gin.Context) {
-	// Get user from context (set by auth middleware)
-	userID, exists := c.Get("user_id")
+	// Get user ID from context (set by auth middleware)
+	userIDVal, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	userID := userIDVal.(int)
 
-	username, _ := c.Get("username")
-	roles, _ := c.Get("roles")
+	// 🚩 FIX 1: Fetch user base info (Username, Email) from DB
+	userInfo, err := infoDB.GetUserBaseInfoByID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user info"})
+		return
+	}
+
+	// 🚩 FIX 2: Fetch current roles live from DB
+	roles, err := infoDB.GetUserRoles(userID)
+	if err != nil {
+		// Log error but proceed with empty roles if cannot retrieve
+		roles = []string{}
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"user": infoDB.UserInfo{
-			ID:       userID.(int),
-			Username: username.(string),
-			Email:    "",
-			Roles:    roles.([]string),
+			ID:       userInfo.ID,
+			Username: userInfo.Username,
+			Email:    userInfo.Email,
+			Roles:    roles, // Roles are now guaranteed to be current
 		},
 	})
 }

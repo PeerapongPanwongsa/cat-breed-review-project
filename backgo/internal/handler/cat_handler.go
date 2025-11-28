@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
+	"log" // FIX: เพิ่ม log import เพื่อแก้ไข Error
 
 	"backgo/internal/infoDB"
 
@@ -14,31 +15,36 @@ import (
 
 // GetAllCatsHandler handles GET /api/cats
 func GetAllCatsHandler(c *gin.Context) {
-    limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-    offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
-    
-    // (1) เพิ่มบรรทัดนี้: รับคำค้นหาจาก URL parameter 'q'
-    search := c.DefaultQuery("q", "") 
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	
+	// (1) รับคำค้นหาจาก URL parameter 'q'
+	search := c.DefaultQuery("q", "") 
 
-    // Get current user ID if authenticated
-    var currentUserID *int
-    if userID, exists := c.Get("user_id"); exists {
-        uid := userID.(int)
-        currentUserID = &uid
-    }
+	// Get current user ID if authenticated
+	var currentUserID *int
+	if userID, exists := c.Get("user_id"); exists {
+		uid := userID.(int)
+		currentUserID = &uid
+	}
 
-    // (2) แก้ไขบรรทัดนี้: ส่ง 'search' เข้าไปเป็น parameter ตัวที่ 4
-    cats, err := infoDB.GetAllCats(currentUserID, limit, offset, search)
-    
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	// (2) ส่ง 'search' เข้าไปเป็น parameter ตัวที่ 4
+	cats, err := infoDB.GetAllCats(currentUserID, limit, offset, search)
+	
+	if err != nil {
+		// เพิ่ม log เพื่อดูว่า DB query error หรือไม่
+		log.Printf("DB Error fetching cats: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch cat data from database", "details": err.Error()})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "data":  cats,
-        "count": len(cats),
-    })
+	// เพิ่ม log เพื่อยืนยันว่าดึงข้อมูลมาได้กี่ตัว
+	log.Printf("Successfully fetched %d cats.", len(cats)) 
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":  cats,
+		"count": len(cats),
+	})
 }
 
 // GetCatHandler handles GET /api/cats/:id
@@ -70,29 +76,29 @@ func GetCatHandler(c *gin.Context) {
 
 // CreateCatHandler handles POST /api/admin/cats (Admin only)
 func CreateCatHandler(c *gin.Context) {
-    userIDVal, exists := c.Get("user_id")
-    if !exists {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-        return
-    }
-    userID := userIDVal.(int)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(int)
 
-    var req infoDB.CreateCatRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error":   "invalid request body",
-            "details": err.Error(),
-        })
-        return
-    }
+	var req infoDB.CreateCatRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid request body",
+			"details": err.Error(),
+		})
+		return
+	}
 
-    cat, err := infoDB.CreateCat(userID, req)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-        return
-    }
+	cat, err := infoDB.CreateCat(userID, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-    c.JSON(http.StatusCreated, cat)
+	c.JSON(http.StatusCreated, cat)
 }
 
 // UpdateCatHandler handles PUT /api/admin/cats/:id (Admin only)

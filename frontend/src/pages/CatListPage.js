@@ -13,23 +13,23 @@ const CatListPage = () => {
   // 1. ดึงข้อมูลดิบ
   const rawCats = responseData?.data || (Array.isArray(responseData) ? responseData : []);
 
-  // 2. (เพิ่มใหม่) เรียงลำดับข้อมูล A-Z (ภาษาไทย + อังกฤษ)
-  const cats = [...rawCats].sort((a, b) => 
-    a.name.localeCompare(b.name, 'th', { sensitivity: 'base' })
-  );
+  // 2. ใช้ข้อมูลที่เรียงตาม A-Z มาจาก Backend แล้ว (ลบ Client-side sorting)
+  const cats = rawCats;
 
   useEffect(() => {
     const query = searchParams.get('q');
-    // (หมายเหตุ: ตอนนี้ Backend ยังไม่รองรับการค้นหาด้วย 'q' แต่เราส่งไปก่อนได้)
+    
     if (query) {
-      fetchCats({ q: query });
+      // ใช้ q เพื่อค้นหา (Backend ต้องรองรับ)
+      fetchCats({ q: query, limit: 1000, offset: 0 }); 
     } else {
-      fetchCats(); 
+      // ดึงข้อมูลทั้งหมดโดยไม่มีการจำกัด limit/offset เพื่อแสดงรายการทั้งหมด
+      fetchCats({ limit: 1000, offset: 0 }); 
     }
   }, [fetchCats, searchParams]);
 
   const handleSearchSubmit = (query) => {
-    fetchCats({ q: query }); 
+    fetchCats({ q: query, limit: 1000, offset: 0 }); 
   };
 
   return (
@@ -55,7 +55,7 @@ const CatListPage = () => {
             ))
           ) : (
             <p className="text-gray-600 col-span-full text-center">
-              ไม่พบข้อมูลสายพันธุ์แมว (หรือ Backend ยังไม่ส่งข้อมูลมา)
+              ไม่พบข้อมูลสายพันธุ์แมว
             </p>
           )}
         </div>

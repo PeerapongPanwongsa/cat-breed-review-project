@@ -1,3 +1,5 @@
+-- catbasedetail/docker/init.sql
+
 -- ===================== USERS & AUTHENTICATION =====================
 
 CREATE TABLE users (
@@ -296,12 +298,12 @@ FOR EACH ROW EXECUTE FUNCTION update_breed_discussion_count();
 
 -- ===================== INITIAL DATA =====================
 
--- Insert default roles
+-- Insert default roles (✅ เก็บไว้)
 INSERT INTO roles (name) VALUES
 ('admin'),
 ('user');
 
--- Insert permissions
+-- Insert permissions (✅ เก็บไว้)
 INSERT INTO permissions (name) VALUES
 -- Cat breed permissions
 ('breed.create'),
@@ -318,7 +320,7 @@ INSERT INTO permissions (name) VALUES
 -- Reaction permissions
 ('reaction.create');
 
--- Assign permissions to roles
+-- Assign permissions to roles (Role -> Permission) (✅ เก็บไว้)
 -- Admin gets all permissions
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = 'admin';
@@ -333,8 +335,7 @@ WHERE r.name = 'user' AND p.name IN (
 );
 
 
-
--- Insert sample cat breeds
+-- Insert sample cat breeds (✅ เก็บไว้)
 INSERT INTO cat_breeds (name, origin, description, care_instructions, image_url) VALUES
 -- 1. Persian
 (
@@ -422,7 +423,7 @@ INSERT INTO cat_breeds (name, origin, description, care_instructions, image_url)
 
 -- ===================== INSERT USERS & ADMIN =====================
 
--- สร้าง Users ทั่วไป
+-- สร้าง Users ทั่วไป (✅ เก็บไว้)
 -- หมายเหตุ: password_hash ในตัวอย่างนี้เป็นการ hash จาก bcrypt สำหรับรหัสผ่าน "password123"
 -- ในการใช้งานจริงควรใช้ bcrypt หรือ argon2 ในการ hash รหัสผ่าน
 
@@ -435,40 +436,8 @@ INSERT INTO users (username, email, password_hash, is_active) VALUES
 -- Regular users (password: password1234)
 ('jane_smith', 'jane@example.com', '$2a$12$5.XT7TZatli8vo3/Wsiez.OLaEc.AcTT29xVXeHKTqSC3hBGr6s..', true);
 
--- ===================== INSERT ROLES =====================
-
-INSERT INTO roles (name) VALUES
-('admin'),
-('user');
--- ===================== INSERT PERMISSIONS =====================
-
-INSERT INTO permissions (name) VALUES
--- Breed Management
-('breed.create'),
-('breed.read'),
-('breed.update'),
-('breed.delete'),
-
--- Discussion Management
-('discussion.create'),
-('discussion.read'),
-('discussion.update'),
-('discussion.delete'),
-
--- Reaction Management
-('reaction.create'),
-('reaction.delete'),
-
--- User Management
-('user.read'),
-('user.update'),
-('user.delete'),
-('user.manage_roles'),
-
--- Audit
-('audit.read');
-
--- ===================== ASSIGN ROLES TO USERS =====================
+-- ❌ ส่วนที่ถูกลบออก: การเพิ่ม Roles และ Permissions ซ้ำซ้อน
+-- ===================== ASSIGN ROLES TO USERS ===================== (✅ เก็บไว้)
 
 -- Regular users get user role
 INSERT INTO user_roles (user_id, role_id) VALUES
@@ -476,37 +445,9 @@ INSERT INTO user_roles (user_id, role_id) VALUES
 (2, 2), -- john_doe gets user role
 (3, 2); -- jane_smith gets user role
 
--- ===================== ASSIGN PERMISSIONS TO ROLES =====================
-
--- Admin role gets ALL permissions
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT 1, id FROM permissions;
-
-
--- User role permissions
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT 2, id FROM permissions
-WHERE name IN (
-    'breed.read',
-    'discussion.create', 'discussion.read', 'discussion.update', 'discussion.delete',
-    'reaction.create', 'reaction.delete'
-);
-
-
-
--- ===================== UPDATE LAST LOGIN =====================
+-- ❌ ส่วนที่ถูกลบออก: การกำหนดสิทธิ์ซ้ำซ้อน
+-- ===================== UPDATE LAST LOGIN ===================== (✅ เก็บไว้)
 
 UPDATE users
 SET last_login = CURRENT_TIMESTAMP
 WHERE id IN (1, 2, 3);
-
--- ===================== USER FAVORITES =====================
-
-CREATE TABLE user_favorites (
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    breed_id INTEGER NOT NULL REFERENCES cat_breeds(id) ON DELETE CASCADE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, breed_id)
-);
-
-CREATE INDEX idx_user_favorites_user_id ON user_favorites(user_id);
