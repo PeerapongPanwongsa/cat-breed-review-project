@@ -12,8 +12,39 @@ import (
 
 // ===================== Authentication Handlers =====================
 
+// ✅ ฟังก์ชันใหม่: RegisterHandler handles POST /api/users
+func RegisterHandler(c *gin.Context) {
+	var req infoDB.RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
+		return
+	}
+
+	// 1. ตรวจสอบว่า Username/Email ถูกใช้ไปแล้วหรือไม่ (CreateUser จะช่วยตรวจสอบ)
+	user, err := infoDB.CreateUser(req)
+
+	if err != nil {
+		if err.Error() == "username or email already exists" {
+			c.JSON(http.StatusConflict, gin.H{"error": "Username or Email is already taken"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user", "details": err.Error()})
+		return
+	}
+
+	// 2. Log Audit
+	infoDB.LogAudit(user.ID, "register", "auth", nil, gin.H{"username": user.Username}, c)
+
+	// 3. ส่ง Response สำเร็จ
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "User created successfully",
+		"user_id": user.ID,
+	})
+}
+
 // LoginHandler handles POST /api/auth/login
 func LoginHandler(c *gin.Context) {
+	// ... (โค้ดเดิม)
 	var req infoDB.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
@@ -76,6 +107,7 @@ func LoginHandler(c *gin.Context) {
 
 // RefreshTokenHandler handles POST /api/auth/refresh
 func RefreshTokenHandler(c *gin.Context) {
+	// ... (โค้ดเดิมที่แก้ไขแล้ว)
 	// Try to get refresh token from cookie first
 	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
@@ -118,6 +150,7 @@ func RefreshTokenHandler(c *gin.Context) {
 
 // LogoutHandler handles POST /api/auth/logout
 func LogoutHandler(c *gin.Context) {
+	// ... (โค้ดเดิม)
 	// Get refresh token from cookie
 	refreshToken, err := c.Cookie("refresh_token")
 	if err == nil {
@@ -136,6 +169,7 @@ func LogoutHandler(c *gin.Context) {
 
 // GetMeHandler handles GET /api/auth/me - Get current user info
 func GetMeHandler(c *gin.Context) {
+	// ... (โค้ดเดิมที่แก้ไขแล้ว)
 	// Get user ID from context (set by auth middleware)
 	userIDVal, exists := c.Get("user_id")
 	if !exists {

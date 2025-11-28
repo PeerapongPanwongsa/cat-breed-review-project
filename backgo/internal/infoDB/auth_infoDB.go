@@ -1,9 +1,11 @@
 package infoDB
 
+// 💡 ต้องเพิ่ม import "strings"
 import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings" // ✅ เพิ่ม sql import สำหรับการจัดการ DB
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,11 +31,18 @@ type UserInfo struct {
 	Roles    []string `json:"roles"`
 }
 
-// (✅ เพิ่ม Struct ใหม่สำหรับดึงข้อมูลพื้นฐาน)
 type UserBaseInfo struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
+}
+
+// ✅ เพิ่ม RegisterRequest
+type RegisterRequest struct {
+	Username string `json:"username" binding:"required,min=3,max=50"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=3"`
+	Role     string `json:"role"` // รับ role มาจาก frontend (เพื่อกำหนด default)
 }
 
 type LoginRequest struct {
@@ -74,6 +83,7 @@ func VerifyPassword(hashedPassword, password string) error {
 
 // ===================== JWT Functions =====================
 func GenerateAccessToken(userID int, username string, roles []string) (string, error) {
+	// ... (โค้ดเดิม)
 	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &CustomClaims{
 		UserID:   userID,
@@ -90,6 +100,7 @@ func GenerateAccessToken(userID int, username string, roles []string) (string, e
 }
 
 func GenerateRefreshToken(userID int, username string) (string, error) {
+	// ... (โค้ดเดิม)
 	expirationTime := time.Now().Add(7 * 24 * time.Hour)
 	claims := &CustomClaims{
 		UserID:   userID,
@@ -106,6 +117,7 @@ func GenerateRefreshToken(userID int, username string) (string, error) {
 }
 
 func VerifyToken(tokenString string) (*CustomClaims, error) {
+	// ... (โค้ดเดิม)
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -123,8 +135,65 @@ func VerifyToken(tokenString string) (*CustomClaims, error) {
 
 // ===================== Database Queries =====================
 
+// ✅ ฟังก์ชันใหม่: สร้างผู้ใช้และกำหนดบทบาทเริ่มต้น
+func CreateUser(req RegisterRequest) (User, error) {
+	// 1. Hash Password
+	hashedPassword, err := HashPassword(req.Password)
+	if err != nil {
+		return User{}, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return User{}, err
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	// 2. Insert User
+	var newUser User
+	err = tx.QueryRow(`
+		INSERT INTO users (username, email, password_hash, is_active)
+		VALUES ($1, $2, $3, TRUE)
+		RETURNING id, username, email, is_active, created_at
+	`, req.Username, req.Email, hashedPassword).Scan(
+		&newUser.ID, &newUser.Username, &newUser.Email, &newUser.IsActive, &newUser.CreatedAt,
+	)
+	if err != nil {
+		// ตรวจสอบ Unique Constraint Error (username/email ซ้ำ)
+		if strings.Contains(err.Error(), "duplicate key value") {
+			return User{}, fmt.Errorf("username or email already exists")
+		}
+		return User{}, err
+	}
+
+	// 3. Assign Default Role ('user' หรือ 'member')
+	// Frontend ส่ง role: 'member' มา แต่ใน DB ใช้ 'user'
+	defaultRole := "user"
+
+	_, err = tx.Exec(`
+		INSERT INTO user_roles (user_id, role_id)
+		SELECT $1, id FROM roles WHERE name = $2
+	`, newUser.ID, defaultRole)
+
+	if err != nil {
+		return User{}, fmt.Errorf("failed to assign default role: %w", err)
+	}
+
+	return newUser, nil
+}
+
 // GetUserByUsername retrieves user by username
 func GetUserByUsername(username string) (User, error) {
+	// ... (โค้ดเดิม)
 	var user User
 	query := `SELECT id, username, email, password_hash, is_active, created_at 
 			  FROM users WHERE username = $1`
@@ -141,9 +210,9 @@ func GetUserByUsername(username string) (User, error) {
 	return user, err
 }
 
-// (✅ ฟังก์ชันใหม่: ดึงข้อมูลผู้ใช้จาก ID)
 // GetUserBaseInfoByID retrieves user's base info by ID
 func GetUserBaseInfoByID(userID int) (UserBaseInfo, error) {
+	// ... (โค้ดเดิม)
 	var info UserBaseInfo
 	query := `SELECT id, username, email FROM users WHERE id = $1`
 
@@ -157,6 +226,7 @@ func GetUserBaseInfoByID(userID int) (UserBaseInfo, error) {
 
 // GetUserRoles retrieves all roles for a user
 func GetUserRoles(userID int) ([]string, error) {
+	// ... (โค้ดเดิม)
 	query := `
 		SELECT r.name
 		FROM roles r
@@ -182,6 +252,7 @@ func GetUserRoles(userID int) ([]string, error) {
 
 // CheckUserPermission checks if user has specific permission
 func CheckUserPermission(userID int, permission string) bool {
+	// ... (โค้ดเดิม)
 	query := `
 		SELECT COUNT(*)
 		FROM permissions p
@@ -200,6 +271,7 @@ func CheckUserPermission(userID int, permission string) bool {
 
 // UpdateLastLogin updates user's last login timestamp
 func UpdateLastLogin(userID int) error {
+	// ... (โค้ดเดิม)
 	query := `UPDATE users SET last_login = NOW() WHERE id = $1`
 	_, err := db.Exec(query, userID)
 	return err

@@ -26,6 +26,7 @@ func getEnv(key, defaultValue string) string {
 var db *sql.DB
 
 func initDB() {
+	// ... (โค้ดเดิม)
 	var err error
 	host := getEnv("DB_HOST", "localhost")
 	port := getEnv("DB_PORT", "5432")
@@ -58,6 +59,7 @@ var allowedOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000"}
 
 // ฟังก์ชันจัดการ CORS ที่ยืดหยุ่นสำหรับ Development
 func corsMiddleware() gin.HandlerFunc {
+	// ... (โค้ดเดิม)
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 
@@ -72,11 +74,11 @@ func corsMiddleware() gin.HandlerFunc {
 		// ถ้า Origin ถูกส่งมา และถูกอนุญาต, ให้ Mirror Origin นั้นทันที และอนุญาต Credentials
 		if allowed {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true") 
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		} else if origin != "" {
-            // กรณีที่ Origin ไม่ตรง แต่มี Origin ส่งมา เราจะไม่ส่ง Allow-Credentials
-            c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-        }
+			// กรณีที่ Origin ไม่ตรง แต่มี Origin ส่งมา เราจะไม่ส่ง Allow-Credentials
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 
 		// Header ที่เหลือเหมือนเดิม
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -97,7 +99,7 @@ func main() {
 	defer db.Close()
 
 	r := gin.Default()
-	
+
 	r.Use(corsMiddleware())
 
 	// ===================== PUBLIC ROUTES =====================
@@ -109,6 +111,9 @@ func main() {
 				"message": "Cat Breeds API is running",
 			})
 		})
+
+		// ✅ เพิ่ม Route สำหรับการลงทะเบียนผู้ใช้ใหม่ (POST /api/users)
+		public.POST("/users", handler.RegisterHandler)
 
 		auth := public.Group("/auth")
 		{
@@ -134,7 +139,7 @@ func main() {
 		user.POST("/discussions", handler.CreateDiscussionHandler)
 		user.PUT("/discussions/:id", handler.UpdateDiscussionHandler)
 		user.DELETE("/discussions/:id", handler.DeleteDiscussionHandler)
-		user.POST("/discussions/:id/react", handler.ToggleDiscussionReactionHandler)     
+		user.POST("/discussions/:id/react", handler.ToggleDiscussionReactionHandler)
 	}
 
 	// ===================== ADMIN ROUTES =====================
