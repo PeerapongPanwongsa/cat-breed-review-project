@@ -1,10 +1,10 @@
-import React from 'react';
-import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/common/Button';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { useAuth } from '../hooks/useAuth';
 
 import MyReviewList from '../components/profile/MyReviewList';
+// import './Profile.css';
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
@@ -12,7 +12,7 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/'); 
+    navigate('/');
   };
 
   if (!user) {

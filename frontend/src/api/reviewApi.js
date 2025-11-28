@@ -3,16 +3,17 @@ import apiClient from './axiosConfig.js';
 export const postReview = (reviewData) => {
   const payload = {
     breed_id: parseInt(reviewData.catId),
-    message: reviewData.comment,
-    ratings: reviewData.ratings, 
-    tags: reviewData.tags,       
+    message: reviewData.message || "",
+    ratings: reviewData.ratings || {},
+    tags: reviewData.tags || [],
+    parent_id: reviewData.parentId || null,
   };
 
   return apiClient.post('/discussions', payload);
 };
 
 export const getReviewsByUserId = (userId) => {
-  return apiClient.get('/discussions/me'); 
+  return apiClient.get('/discussions/me');
 };
 
 export const registerUser = (userData) => {

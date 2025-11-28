@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
-	"github.com/lib/pq"
+	"fmt"
 )
 
 // ===================== Cat Breed Models =====================
@@ -13,11 +13,13 @@ type Cat struct {
 	ID              int     `json:"id"`
 	Name            string  `json:"name"`
 	Origin          string  `json:"origin"`
-	Description     string  `json:"description"`
+	History     	string  `json:"history"`
+	Appearance  	string  `json:"appearance"`
+	Temperament 	string  `json:"temperament"`
 	Care            string  `json:"care"`
 	ImageURL        string  `json:"image_url"`
 	
-	// Engagement metrics 
+	// Engagement metrics
 	LikeCount       int `json:"like_count"`
 	DislikeCount    int `json:"dislike_count"`
 	DiscussionCount int `json:"discussion_count"`
@@ -36,18 +38,22 @@ type Cat struct {
 
 type CreateCatRequest struct {
 	Name            string `json:"name" binding:"required,min=2,max=255"`
-	Origin          string `json:"origin"`
-	Description     string `json:"description"`
-	Care            string `json:"care"`
-	ImageURL        string `json:"image_url"`
+	Origin          string  `json:"origin"`
+	History     	string  `json:"history"`
+	Appearance  	string  `json:"appearance"`
+	Temperament 	string  `json:"temperament"`
+	Care            string  `json:"care"`
+	ImageURL        string  `json:"image_url"`
 }
 
 type UpdateCatRequest struct {
 	Name            string `json:"name" binding:"min=2,max=255"`
-	Origin          string `json:"origin"`
-	Description     string `json:"description"`
-	Care            string `json:"care"`
-	ImageURL        string `json:"image_url"`
+	Origin          string  `json:"origin"`
+	History     	string  `json:"history"`
+	Appearance  	string  `json:"appearance"`
+	Temperament 	string  `json:"temperament"`
+	Care            string  `json:"care"`
+	ImageURL        string  `json:"image_url"`
 }
 
 // ===================== Discussion Models =====================
@@ -56,7 +62,7 @@ type Discussion struct {
 	ID              int           `json:"id"`
 	BreedID         int           `json:"breed_id"`
 	// 🚩 เพิ่มฟิลด์ BreedName สำหรับหน้า Profile
-	BreedName       string        `json:"breed_name"` 
+	BreedName       string        `json:"breed_name"`
 	UserID          int           `json:"user_id"`
 	Username        string        `json:"username"`
 	Message         string        `json:"message"`
@@ -68,6 +74,7 @@ type Discussion struct {
 	
 	UserReaction    *string       `json:"user_reaction,omitempty"`
 	IsDeleted       bool          `json:"is_deleted"`
+	IsOwner      	bool          `json:"is_owner"` // <- เพิ่มตรงนี้
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
 	Replies         []Discussion  `json:"replies,omitempty"`
@@ -155,7 +162,7 @@ func GetAllCats(currentUserID *int, limit, offset int, search string) ([]Cat, er
 	// (เพิ่ม) ดึง average_ratings มาด้วย
 	rows, err := db.Query(`
 		SELECT 
-			cb.id, cb.name, cb.origin, cb.description, cb.care_instructions, cb.image_url,
+			cb.id, cb.name, cb.origin, cb.history, cb.appearance, cb.temperament, cb.care_instructions, cb.image_url,
 			cb.like_count, cb.dislike_count, cb.discussion_count, cb.view_count,
 			cb.created_at, cb.updated_at, cb.created_by,
 			cb.average_ratings, 
@@ -180,7 +187,7 @@ func GetAllCats(currentUserID *int, limit, offset int, search string) ([]Cat, er
 		var avgRatingsJSON []byte // ตัวแปรรับ JSON
 
 		err := rows.Scan(
-			&cat.ID, &cat.Name, &cat.Origin, &cat.Description,
+			&cat.ID, &cat.Name, &cat.Origin, &cat.History, &cat.Appearance, &cat.Temperament,
 			&cat.Care, &cat.ImageURL,
 			&cat.LikeCount, &cat.DislikeCount, &cat.DiscussionCount, &cat.ViewCount,
 			&cat.CreatedAt, &cat.UpdatedAt, &createdBy,
@@ -226,8 +233,8 @@ func GetCat(id int, currentUserID *int) (Cat, error) {
 
 	// (เพิ่ม) ดึง average_ratings
 	row := db.QueryRow(`
-		SELECT 
-			cb.id, cb.name, cb.origin, cb.description, cb.care_instructions, cb.image_url,
+		SELECT
+			cb.id, cb.name, cb.origin, cb.history, cb.appearance, cb.temperament, cb.care_instructions, cb.image_url,
 			cb.like_count, cb.dislike_count, cb.discussion_count, cb.view_count,
 			cb.created_at, cb.updated_at, cb.created_by,
 			cb.average_ratings,
@@ -238,7 +245,7 @@ func GetCat(id int, currentUserID *int) (Cat, error) {
 	`, userID, id)
 
 	err := row.Scan(
-		&cat.ID, &cat.Name, &cat.Origin, &cat.Description,
+		&cat.ID, &cat.Name, &cat.Origin, &cat.History, &cat.Appearance, &cat.Temperament,
 		&cat.Care, &cat.ImageURL,
 		&cat.LikeCount, &cat.DislikeCount, &cat.DiscussionCount, &cat.ViewCount,
 		&cat.CreatedAt, &cat.UpdatedAt, &createdBy,
@@ -275,15 +282,15 @@ func CreateCat(userID int, req CreateCatRequest) (Cat, error) {
 	var createdBy sql.NullInt64
 
 	row := db.QueryRow(`
-		INSERT INTO cat_breeds (name, origin, description, care_instructions, image_url, created_by)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, name, origin, description, care_instructions, image_url,
+		INSERT INTO cat_breeds (name, origin, history, appearance, temperament, care_instructions, image_url, created_by)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, name, origin, history, appearance, temperament, care_instructions, image_url,
 					like_count, dislike_count, discussion_count, view_count,
 					created_at, updated_at, created_by
-	`, req.Name, req.Origin, req.Description, req.Care, req.ImageURL, userID)
+	`, req.Name, req.Origin, req.History, req.Appearance, req.Temperament, req.Care, req.ImageURL, userID)
 
 	err := row.Scan(
-		&cat.ID, &cat.Name, &cat.Origin, &cat.Description,
+		&cat.ID, &cat.Name, &cat.Origin, &cat.History, &cat.Appearance, &cat.Temperament,
 		&cat.Care, &cat.ImageURL,
 		&cat.LikeCount, &cat.DislikeCount, &cat.DiscussionCount, &cat.ViewCount,
 		&cat.CreatedAt, &cat.UpdatedAt, &createdBy,
@@ -307,21 +314,23 @@ func UpdateCat(catID int, req UpdateCatRequest) (Cat, error) {
 	var createdBy sql.NullInt64
 
 	row := db.QueryRow(`
-		UPDATE cat_breeds 
+		UPDATE cat_breeds
 		SET name = COALESCE(NULLIF($1, ''), name),
 			origin = COALESCE(NULLIF($2, ''), origin),
-			description = COALESCE(NULLIF($3, ''), description),
-			care_instructions = COALESCE(NULLIF($4, ''), care_instructions),
-			image_url = COALESCE(NULLIF($5, ''), image_url),
+			history = COALESCE(NULLIF($3, ''), history),
+			appearance = COALESCE(NULLIF($4, ''), appearance),
+			temperament = COALESCE(NULLIF($5, ''), temperament),
+			care_instructions = COALESCE(NULLIF($6, ''), care_instructions),
+			image_url = COALESCE(NULLIF($7, ''), image_url),
 			updated_at = CURRENT_TIMESTAMP
-		WHERE id = $6
-		RETURNING id, name, origin, description, care_instructions, image_url,
+		WHERE id = $8
+		RETURNING id, name, origin, history, appearance, temperament, care_instructions, image_url,
 					like_count, dislike_count, discussion_count, view_count,
 					created_at, updated_at, created_by
-	`, req.Name, req.Origin, req.Description, req.Care, req.ImageURL, catID)
+	`, req.Name, req.Origin, req.History, req.Appearance, req.Temperament, req.Care, req.ImageURL, catID)
 
 	err := row.Scan(
-		&cat.ID, &cat.Name, &cat.Origin, &cat.Description,
+		&cat.ID, &cat.Name, &cat.Origin, &cat.History, &cat.Appearance, &cat.Temperament,
 		&cat.Care, &cat.ImageURL,
 		&cat.LikeCount, &cat.DislikeCount, &cat.DiscussionCount, &cat.ViewCount,
 		&cat.CreatedAt, &cat.UpdatedAt, &createdBy,
@@ -452,81 +461,7 @@ func GetCatReactionStats(catID int, currentUserID *int) (ReactionResponse, error
 
 // ===================== Discussion Functions =====================
 
-// GetCatDiscussions
-func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Discussion, error) {
-	var userID int
-	if currentUserID != nil {
-		userID = *currentUserID
-	}
-
-	// (เพิ่ม) ดึง ratings และ tags
-	rows, err := db.Query(`
-		SELECT 
-			d.id, d.breed_id, d.user_id, u.username, d.parent_id,
-			d.message, d.like_count, d.dislike_count, d.reply_count,
-			d.ratings, d.tags,
-			d.is_deleted, d.created_at, d.updated_at,
-			dr.reaction_type as user_reaction
-		FROM discussions d
-		JOIN users u ON d.user_id = u.id
-		LEFT JOIN discussion_reactions dr ON d.id = dr.discussion_id AND dr.user_id = $1
-		WHERE d.breed_id = $2 AND d.parent_id IS NULL
-		ORDER BY d.created_at DESC
-		LIMIT $3 OFFSET $4
-	`, userID, catID, limit, offset)
-
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var discussions []Discussion
-	for rows.Next() {
-		var discussion Discussion
-		var parentID sql.NullInt64
-		var userReaction sql.NullString
-		var ratingsJSON []byte      // รับ ratings
-		var tagsArray pq.StringArray // รับ tags
-
-		err := rows.Scan(
-			&discussion.ID, &discussion.BreedID, &discussion.UserID, &discussion.Username,
-			&parentID, &discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
-			&discussion.ReplyCount, 
-			&ratingsJSON, &tagsArray,
-			&discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
-			&userReaction,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		// แปลงข้อมูล
-		if len(ratingsJSON) > 0 {
-			discussion.Ratings = make(map[string]int)
-			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
-		}
-		discussion.Tags = []string(tagsArray)
-
-		if parentID.Valid {
-			pid := int(parentID.Int64)
-			discussion.ParentID = &pid
-		}
-
-		if userReaction.Valid {
-			discussion.UserReaction = &userReaction.String
-		}
-
-		// Get replies
-		replies, _ := GetDiscussionReplies(discussion.ID, currentUserID, 100, 0)
-		discussion.Replies = replies
-
-		discussions = append(discussions, discussion)
-	}
-
-	return discussions, nil
-}
-
-// GetDiscussionReplies
+// GetDiscussionReplies (แก้ให้ scan ratings/tags เป็น JSONB)
 func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) ([]Discussion, error) {
 	var userID int
 	if currentUserID != nil {
@@ -543,7 +478,7 @@ func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) (
 		FROM discussions d
 		JOIN users u ON d.user_id = u.id
 		LEFT JOIN discussion_reactions dr ON d.id = dr.discussion_id AND dr.user_id = $1
-		WHERE d.parent_id = $2
+		WHERE d.parent_id = $2 AND d.is_deleted = FALSE
 		ORDER BY d.created_at ASC
 		LIMIT $3 OFFSET $4
 	`, userID, parentID, limit, offset)
@@ -559,25 +494,33 @@ func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) (
 		var parentIDVal sql.NullInt64
 		var userReaction sql.NullString
 		var ratingsJSON []byte
-		var tagsArray pq.StringArray
+		var tagsJSON []byte
 
 		err := rows.Scan(
 			&discussion.ID, &discussion.BreedID, &discussion.UserID, &discussion.Username,
 			&parentIDVal, &discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
-			&discussion.ReplyCount, 
-			&ratingsJSON, &tagsArray,
+			&discussion.ReplyCount,
+			&ratingsJSON, &tagsJSON,
 			&discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
 			&userReaction,
 		)
 		if err != nil {
 			return nil, err
 		}
-		
+
+		// ratings
 		if len(ratingsJSON) > 0 {
 			discussion.Ratings = make(map[string]int)
 			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
 		}
-		discussion.Tags = []string(tagsArray)
+
+		// tags (JSON array -> []string)
+		if len(tagsJSON) > 0 {
+			var t []string
+			if err := json.Unmarshal(tagsJSON, &t); err == nil {
+				discussion.Tags = t
+			}
+		}
 
 		if parentIDVal.Valid {
 			pid := int(parentIDVal.Int64)
@@ -594,56 +537,170 @@ func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) (
 	return discussions, nil
 }
 
-// CreateDiscussion
+// GetCatDiscussions (แก้ให้ scan ratings/tags เป็น JSONB และใช้ GetDiscussionReplies เดิม)
+func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Discussion, error) {
+	var userID int
+	if currentUserID != nil {
+		userID = *currentUserID
+	}
+
+	rows, err := db.Query(`
+		SELECT 
+			d.id, d.breed_id, d.user_id, u.username, d.parent_id,
+			d.message, d.like_count, d.dislike_count, d.reply_count,
+			d.ratings, d.tags,
+			d.is_deleted, d.created_at, d.updated_at,
+			dr.reaction_type as user_reaction
+		FROM discussions d
+		JOIN users u ON d.user_id = u.id
+		LEFT JOIN discussion_reactions dr ON d.id = dr.discussion_id AND dr.user_id = $1
+		WHERE d.breed_id = $2 AND d.parent_id IS NULL AND d.is_deleted = FALSE
+		ORDER BY d.created_at DESC
+		LIMIT $3 OFFSET $4
+	`, userID, catID, limit, offset)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var discussions []Discussion
+	for rows.Next() {
+		var discussion Discussion
+		var parentID sql.NullInt64
+		var userReaction sql.NullString
+		var ratingsJSON []byte
+		var tagsJSON []byte
+
+		err := rows.Scan(
+			&discussion.ID, &discussion.BreedID, &discussion.UserID, &discussion.Username,
+			&parentID, &discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
+			&discussion.ReplyCount,
+			&ratingsJSON, &tagsJSON,
+			&discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
+			&userReaction,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// ratings
+		if len(ratingsJSON) > 0 {
+			discussion.Ratings = make(map[string]int)
+			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
+		}
+
+		// tags
+		if len(tagsJSON) > 0 {
+			var t []string
+			if err := json.Unmarshal(tagsJSON, &t); err == nil {
+				discussion.Tags = t
+			}
+		}
+
+		if parentID.Valid {
+			pid := int(parentID.Int64)
+			discussion.ParentID = &pid
+		}
+
+		if userReaction.Valid {
+			discussion.UserReaction = &userReaction.String
+		}
+
+		// owner check
+		discussion.IsOwner = (currentUserID != nil && discussion.UserID == *currentUserID)
+
+		// load replies
+		replies, _ := GetDiscussionReplies(discussion.ID, currentUserID, 100, 0)
+		discussion.Replies = replies
+
+		discussions = append(discussions, discussion)
+	}
+
+	return discussions, nil
+}
+
+// CreateDiscussion (แก้การส่ง ratings/tags → jsonb)
 func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, error) {
+	fmt.Println("Received review:", req)
 	var discussion Discussion
 	var parentID sql.NullInt64
-	
-	// แปลง Ratings เป็น JSON string
-	ratingsJSON, _ := json.Marshal(req.Ratings)
 
-	// บันทึก ratings และ tags ลง Database
+	// validate parent if provided
+	if req.ParentID != nil {
+		var parentBreedID int
+		err := db.QueryRow(`SELECT breed_id FROM discussions WHERE id = $1`, *req.ParentID).Scan(&parentBreedID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return Discussion{}, fmt.Errorf("parent discussion not found")
+			}
+			return Discussion{}, err
+		}
+		if parentBreedID != req.BreedID {
+			return Discussion{}, fmt.Errorf("parent discussion belongs to a different breed")
+		}
+	}
+
+	// prepare JSON args (nil if empty)
+	var ratingsArg interface{} = nil
+	if req.Ratings != nil && len(req.Ratings) > 0 {
+		b, _ := json.Marshal(req.Ratings)
+		ratingsArg = string(b) // pass as string then cast to jsonb in SQL
+	}
+
+	var tagsArg interface{} = nil
+	if req.Tags != nil && len(req.Tags) > 0 {
+		b, _ := json.Marshal(req.Tags)
+		tagsArg = string(b)
+	}
+
+	// NOTE: cast $5::jsonb and $6::jsonb so passing string works
 	row := db.QueryRow(`
-		INSERT INTO discussions (breed_id, user_id, parent_id, message, ratings, tags)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, breed_id, user_id, parent_id, message, 
-				  ratings, tags,
-				  like_count, dislike_count, reply_count, is_deleted, created_at, updated_at
-	`, req.BreedID, userID, req.ParentID, req.Message, ratingsJSON, pq.Array(req.Tags))
+        INSERT INTO discussions (breed_id, user_id, parent_id, message, ratings, tags)
+        VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)
+        RETURNING id, breed_id, user_id, parent_id, message, 
+                  ratings, tags,
+                  like_count, dislike_count, reply_count, is_deleted, created_at, updated_at
+    `, req.BreedID, userID, req.ParentID, req.Message, ratingsArg, tagsArg)
 
 	var ratingsBytes []byte
-	var tagsArray pq.StringArray
+	var tagsBytes []byte
 
 	err := row.Scan(
 		&discussion.ID, &discussion.BreedID, &discussion.UserID, &parentID,
-		&discussion.Message, 
-		&ratingsBytes, &tagsArray,
+		&discussion.Message,
+		&ratingsBytes, &tagsBytes,
 		&discussion.LikeCount, &discussion.DislikeCount,
 		&discussion.ReplyCount, &discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
 	)
-
 	if err != nil {
 		return Discussion{}, err
 	}
-	
+
+	// unmarshal ratings
 	if len(ratingsBytes) > 0 {
 		discussion.Ratings = make(map[string]int)
-		json.Unmarshal(ratingsBytes, &discussion.Ratings)
+		_ = json.Unmarshal(ratingsBytes, &discussion.Ratings)
 	}
-	discussion.Tags = []string(tagsArray)
+
+	// unmarshal tags
+	if len(tagsBytes) > 0 {
+		var t []string
+		_ = json.Unmarshal(tagsBytes, &t)
+		discussion.Tags = t
+	}
 
 	if parentID.Valid {
 		pid := int(parentID.Int64)
 		discussion.ParentID = &pid
 	}
 
-	db.QueryRow("SELECT username FROM users WHERE id = $1", userID).Scan(&discussion.Username)
+	_ = db.QueryRow("SELECT username FROM users WHERE id = $1", userID).Scan(&discussion.Username)
+	discussion.IsOwner = true
 
-	// 🚩 เรียกใช้ฟังก์ชัน Update Average Rating 
-	// ตรวจสอบว่าเป็นรีวิวหลัก (parent_id IS NULL) และมี Ratings
-	if req.ParentID == nil && len(req.Ratings) > 0 {
+	// update average if top-level review
+	if req.ParentID == nil && len(discussion.Ratings) > 0 {
 		if err := CalculateAndSetAverageRatings(req.BreedID); err != nil {
-			// ถ้าอัปเดตค่าเฉลี่ยล้มเหลว ให้ส่ง Error กลับไป
 			return Discussion{}, err
 		}
 	}
@@ -651,69 +708,81 @@ func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, erro
 	return discussion, nil
 }
 
-// UpdateDiscussion
+// UpdateDiscussion (แก้ให้ update tags เป็น JSONB)
 func UpdateDiscussion(discussionID, userID int, req UpdateDiscussionRequest) (Discussion, error) {
 	var discussion Discussion
 	var parentID sql.NullInt64
 	var breedID int
 
-	// 1. ดึง breed_id ก่อน
+	// fetch breed_id
 	err := db.QueryRow("SELECT breed_id, parent_id FROM discussions WHERE id = $1", discussionID).Scan(&breedID, &parentID)
 	if err != nil {
 		return Discussion{}, err
 	}
 
-	// แปลง Ratings เป็น JSON
-	ratingsJSON, _ := json.Marshal(req.Ratings)
+	// prepare JSON args
+	var ratingsArg interface{} = nil
+	if req.Ratings != nil && len(req.Ratings) > 0 {
+		b, _ := json.Marshal(req.Ratings)
+		ratingsArg = string(b)
+	}
 
-	// แก้ SQL Query: เพิ่ม SET ratings = $2, tags = $3
+	var tagsArg interface{} = nil
+	if req.Tags != nil && len(req.Tags) > 0 {
+		b, _ := json.Marshal(req.Tags)
+		tagsArg = string(b)
+	}
+
 	row := db.QueryRow(`
 		UPDATE discussions 
-		SET message = $1, ratings = $2, tags = $3, updated_at = CURRENT_TIMESTAMP
+		SET message = $1, ratings = $2::jsonb, tags = $3::jsonb, updated_at = CURRENT_TIMESTAMP
 		WHERE id = $4 AND user_id = $5
 		RETURNING id, breed_id, user_id, parent_id, message, 
 				  ratings, tags,
 				  like_count, dislike_count, reply_count, is_deleted, created_at, updated_at
-	`, req.Message, ratingsJSON, pq.Array(req.Tags), discussionID, userID)
+	`, req.Message, ratingsArg, tagsArg, discussionID, userID)
 
 	var ratingsBytes []byte
-	var tagsArray pq.StringArray
+	var tagsBytes []byte
 
 	err = row.Scan(
 		&discussion.ID, &discussion.BreedID, &discussion.UserID, &parentID,
-		&discussion.Message, 
-		&ratingsBytes, &tagsArray,
+		&discussion.Message,
+		&ratingsBytes, &tagsBytes,
 		&discussion.LikeCount, &discussion.DislikeCount,
 		&discussion.ReplyCount, &discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
 	)
-
 	if err != nil {
 		return Discussion{}, err
 	}
 
 	if len(ratingsBytes) > 0 {
 		discussion.Ratings = make(map[string]int)
-		json.Unmarshal(ratingsBytes, &discussion.Ratings)
+		_ = json.Unmarshal(ratingsBytes, &discussion.Ratings)
 	}
-	discussion.Tags = []string(tagsArray)
+	if len(tagsBytes) > 0 {
+		var t []string
+		_ = json.Unmarshal(tagsBytes, &t)
+		discussion.Tags = t
+	}
 
 	if parentID.Valid {
 		pid := int(parentID.Int64)
 		discussion.ParentID = &pid
 	}
 
-	db.QueryRow("SELECT username FROM users WHERE id = $1", userID).Scan(&discussion.Username)
+	_ = db.QueryRow("SELECT username FROM users WHERE id = $1", userID).Scan(&discussion.Username)
 
-	// 🚩 ถ้าเป็นการอัปเดตรีวิวหลัก ให้คำนวณค่าเฉลี่ยใหม่
-	if parentID.Valid == false && len(discussion.Ratings) > 0 {
+	// recalc average if top-level
+	if !parentID.Valid && len(discussion.Ratings) > 0 {
 		if err := CalculateAndSetAverageRatings(breedID); err != nil {
 			return Discussion{}, err
 		}
 	}
 
-
 	return discussion, nil
 }
+
 
 // DeleteDiscussion
 func DeleteDiscussion(discussionID, userID int, isAdmin bool) error {
@@ -857,13 +926,13 @@ func GetDiscussionsByUserID(userID int) ([]Discussion, error) {
 		var parentID sql.NullInt64
 		var userReaction sql.NullString
 		var ratingsJSON []byte
-		var tagsArray pq.StringArray
+		var tagsJSON []byte
 
 		err := rows.Scan(
 			&discussion.ID, &discussion.BreedID, &discussion.BreedName, &discussion.UserID, &discussion.Username,
 			&parentID, &discussion.Message, &discussion.LikeCount, &discussion.DislikeCount,
-			&discussion.ReplyCount, 
-			&ratingsJSON, &tagsArray,
+			&discussion.ReplyCount,
+			&ratingsJSON, &tagsJSON,
 			&discussion.IsDeleted, &discussion.CreatedAt, &discussion.UpdatedAt,
 			&userReaction,
 		)
@@ -875,7 +944,12 @@ func GetDiscussionsByUserID(userID int) ([]Discussion, error) {
 			discussion.Ratings = make(map[string]int)
 			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
 		}
-		discussion.Tags = []string(tagsArray)
+		if len(tagsJSON) > 0 {
+			var t []string
+			if err := json.Unmarshal(tagsJSON, &t); err == nil {
+				discussion.Tags = t
+			}
+		}
 
 		if parentID.Valid {
 			pid := int(parentID.Int64)

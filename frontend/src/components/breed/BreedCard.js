@@ -1,9 +1,7 @@
 // frontend/src/components/breed/BreedCard.js
 
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { StarIcon } from '@heroicons/react/20/solid';
-import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
+import { Link, useNavigate } from 'react-router-dom';
 // 💡 เพิ่ม MapPinIcon
 import { MapPinIcon } from '@heroicons/react/24/solid';
 
@@ -56,7 +54,7 @@ const AspectRatings = ({ ratings }) => {
  */
 const BreedCard = ({ breed }) => {
     // ✅ เพิ่ม 'origin' ใน Destructuring
-    const { id, name, image_url, description, ratings, origin } = breed; 
+    const { id, name, image_url, history, ratings, origin } = breed;
     
     const navigate = useNavigate(); 
 
@@ -82,7 +80,7 @@ const BreedCard = ({ breed }) => {
                 </p>
 
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
-                    {description || 'ไม่มีคำอธิบายสำหรับสายพันธุ์นี้'}
+                    {history || 'ไม่มีคำอธิบายสำหรับสายพันธุ์นี้'}
                 </p>
 
                 <div className="mb-4 border-t pt-4">

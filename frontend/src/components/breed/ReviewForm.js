@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import Button from '../common/Button';
 import RatingInput from './RatingInput';
@@ -33,7 +33,7 @@ const ReviewForm = ({ catId, onSubmitReview }) => {
       userId: user.id,
       authorName: user.username,
       date: new Date().toISOString(),
-      comment: comment,
+      message: comment,
       ratings: ratings,
       tags: tags,
       upVotes: 0,

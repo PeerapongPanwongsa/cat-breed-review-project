@@ -39,7 +39,7 @@ func GetAllCatsHandler(c *gin.Context) {
 	}
 
 	// เพิ่ม log เพื่อยืนยันว่าดึงข้อมูลมาได้กี่ตัว
-	log.Printf("Successfully fetched %d cats.", len(cats)) 
+	log.Printf("Successfully fetched %d cats.", len(cats))
 
 	c.JSON(http.StatusOK, gin.H{
 		"data":  cats,
@@ -386,5 +386,9 @@ func GetMyDiscussionsHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, discussions)
+	// ✅ Wrap ใน object เหมือน Handler อื่นๆ
+	c.JSON(http.StatusOK, gin.H{
+		"data":  discussions,
+		"count": len(discussions),
+	})
 }

@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { BoltIcon, HeartIcon, MapPinIcon, PaintBrushIcon } from '@heroicons/react/24/solid';
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { getCatById, getCatDiscussions } from '../api/catApi';
-import { postReview, deleteReview } from '../api/reviewApi';
-import { useAuth } from '../hooks/useAuth';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import { deleteReview, postReview } from '../api/reviewApi';
+import RatingInput from '../components/breed/RatingInput';
+import ReviewForm from '../components/breed/ReviewForm';
+import ReviewList from '../components/breed/ReviewList';
 import Tag from '../components/breed/Tag';
 import Button from '../components/common/Button';
-import ReviewList from '../components/breed/ReviewList';
-import ReviewForm from '../components/breed/ReviewForm';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import EditReviewModal from '../components/profile/EditReviewModal';
-import RatingInput from '../components/breed/RatingInput';
-import { MapPinIcon, HeartIcon, BoltIcon, PaintBrushIcon } from '@heroicons/react/24/solid';
-
+import { useAuth } from '../hooks/useAuth';
 
 const getPopularTags = (reviews) => {
     if (!reviews || reviews.length === 0) return [];
@@ -23,7 +22,6 @@ const getPopularTags = (reviews) => {
     return Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 5);
 };
 
-// 💡 ฟังก์ชันช่วยแสดงชื่อ Rating 
 const getRatingLabel = (key) => {
     switch(key) {
       case 'friendliness': return { label: 'ความเป็นมิตร', icon: <HeartIcon className="w-5 h-5 text-red-500" /> };
@@ -33,7 +31,6 @@ const getRatingLabel = (key) => {
       default: return { label: key, icon: null };
     }
 };
-
 
 const CatDetailPage = () => {
     const { id: catId } = useParams();
@@ -55,20 +52,30 @@ const CatDetailPage = () => {
             ]);
             const cat = catResponse.data;
             const rawDiscussions = discussionsResponse.data.data || [];
-            const mappedReviews = rawDiscussions.filter(d => !d.is_deleted).map(d => ({
-                id: d.id,
-                catId: d.breed_id,
-                userId: d.user_id,
-                authorName: d.username,
-                date: d.created_at,
-                comment: d.message,
-                upVotes: d.like_count,
-                downVotes: d.dislike_count,
-                ratings: d.ratings || null,
-                tags: d.tags || [],
-                userReaction: d.user_reaction
-            }));
-            setCatData({ ...cat, reviews: mappedReviews });
+            const mapDiscussion = (d) => ({
+            id: d.id,
+            catId: d.breed_id,
+            userId: d.user_id,
+            authorName: d.username,
+            date: d.created_at,
+            comment: d.message || d.comment,
+            upVotes: d.like_count || 0,
+            downVotes: d.dislike_count || 0,
+            ratings: d.ratings || null,
+            tags: d.tags || [],
+            userReaction: d.user_reaction,
+            parentId: d.parent_id || null,
+            replies: (d.replies || []).map(mapDiscussion) // ✅ เรียกตัวเองแบบ recursive
+        });
+
+        // ✅ เอาเฉพาะ top-level reviews (ไม่มี parent_id)
+        const mappedReviews = rawDiscussions
+            .filter(d => !d.is_deleted && !d.parent_id)
+            .map(mapDiscussion);
+
+        console.log('Final Reviews:', mappedReviews); // ✅ Debug
+
+        setCatData({ ...cat, reviews: mappedReviews });
         } catch (err) {
             console.error(err);
             setError('ไม่สามารถโหลดข้อมูลได้');
@@ -84,7 +91,6 @@ const CatDetailPage = () => {
     const handleReviewSubmit = async (reviewData) => {
         try {
             await postReview(reviewData);
-            // ดึงข้อมูลแมวใหม่ทั้งหมดเพื่อให้คะแนนเฉลี่ยอัปเดต
             await fetchCat(catId); 
             alert('ขอบคุณสำหรับรีวิวครับ!');
         } catch (err) {
@@ -97,8 +103,7 @@ const CatDetailPage = () => {
         if (!window.confirm("ต้องการลบรีวิวนี้?")) return;
         try {
             await deleteReview(reviewId);
-            // ต้องเรียก fetchCat เพื่ออัปเดตคะแนนเฉลี่ยหลังจากลบด้วย
-            await fetchCat(catId); 
+            await fetchCat(catId);
         } catch (err) {
             alert("ลบไม่สำเร็จ");
         }
@@ -122,8 +127,19 @@ const CatDetailPage = () => {
             ...prev,
             reviews: prev.reviews.map(r => r.id === mappedUpdated.id ? { ...r, ...mappedUpdated } : r)
         }));
-        // ต้องเรียก fetchCat เพื่ออัปเดตคะแนนเฉลี่ยหลังจากแก้ไขด้วย
         fetchCat(catId);
+    };
+
+    // ✅ ฟังก์ชันสำหรับ reply
+    const handleReply = async (parentReviewId, message) => {
+        if (!user) return alert("กรุณาเข้าสู่ระบบเพื่อโต้ตอบ");
+        try {
+            await postReview({ catId, parentId: parentReviewId, message, ratings: null, tags: [] });
+            await fetchCat(catId);
+        } catch (err) {
+            console.error(err);
+            alert('เกิดข้อผิดพลาดในการส่ง reply');
+        }
     };
 
     if (loading) return <LoadingSpinner />;
@@ -133,8 +149,6 @@ const CatDetailPage = () => {
     const { reviews = [], ...breedDetails } = catData;
     const popularTags = getPopularTags(reviews);
     
-    // แปลง ratings map ให้เป็น Array ของ Object: [{key, value, label}, ...]
-    // ✅ FIX: ใช้ Optional Chaining (?.) เพื่อป้องกัน Error หาก breedDetails.ratings เป็น undefined
     const ratingsArray = breedDetails.ratings ? Object.entries(breedDetails.ratings).map(([key, value]) => ({
       key, 
       value, 
@@ -143,7 +157,6 @@ const CatDetailPage = () => {
 
     return (
         <div className="max-w-6xl mx-auto">
-            
             {/* ส่วนแสดงรายละเอียดแมว */}
             <section className="bg-white shadow-lg rounded-xl overflow-hidden md:flex mb-10">
                 <div className="md:w-1/3">
@@ -151,28 +164,30 @@ const CatDetailPage = () => {
                         src={breedDetails.image_url || 'https://placehold.co/400x400?text=Image Not Found'} 
                         alt={breedDetails.name} 
                         className="w-full h-96 md:h-full object-cover"
-                        onError={(e) => e.target.src = 'https://placehold.co/400x400?text=Cat Image Not Found'}
+                        onError={(e) => e.target.src = 'https://placehold.co/400x400?text=Cat+Image+Not+Found'}
                     />
                 </div>
                 
                 <div className="md:w-2/3 p-8">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{breedDetails.name}</h1>
-                    
-                    {/* แสดงถิ่นกำเนิด */}
                     <p className="text-lg text-indigo-600 font-semibold mb-4 flex items-center gap-2">
                         <MapPinIcon className="w-5 h-5 text-indigo-600" />
                         ถิ่นกำเนิด: {breedDetails.origin || 'ไม่ระบุ'}
                     </p>
 
-                    <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.description}</p>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">ประวัติความเป็นมา:</h3>
+                    <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.history}</p>
+
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">ลักษณะเด่น:</h3>
+                    <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.appearance}</p>
+
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">นิสัย:</h3>
+                    <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.temperament}</p>
                     
-                    {/* ส่วนการดูแลรักษา */}
                     <div className="mb-6 p-4 bg-gray-50 border-l-4 border-indigo-500 rounded">
                         <h3 className="text-xl font-bold text-gray-800 mb-2">การดูแลรักษา</h3>
                         <p className="text-gray-600 whitespace-pre-line">{breedDetails.care || 'ยังไม่มีข้อมูลการดูแล'}</p> 
                     </div>
-
-                    {/* คะแนนเฉลี่ย */}
                     <div className="mt-8 pt-4 border-t">
                         <h3 className="text-2xl font-bold text-indigo-700 mb-4">
                             คะแนนเฉลี่ย ({breedDetails.discussion_count} รีวิว)
@@ -188,7 +203,6 @@ const CatDetailPage = () => {
                                                 {ratingInfo.label}
                                             </div>
                                             <RatingInput
-                                                // ❌ FIX: ใช้โหมด Display ตามที่ RatingInput ถูกแก้ไข
                                                 name={item.key}
                                                 value={item.value} 
                                                 readOnly={true}
@@ -204,7 +218,7 @@ const CatDetailPage = () => {
                 </div>
             </section>
 
-            {/* ส่วน Popular Tags */}
+            {/* Popular Tags */}
             <section className="mb-10 p-4 bg-gray-50 rounded-lg shadow-inner">
                 <h3 className="text-xl font-semibold text-gray-700 mb-3">แท็กยอดนิยม</h3>
                 <div className="flex flex-wrap gap-2">
@@ -216,13 +230,14 @@ const CatDetailPage = () => {
                 </div>
             </section>
 
-            {/* ส่วนรีวิว */}
+            {/* รีวิว */}
             <h2 className="text-3xl font-bold text-gray-800 mb-6 mt-12">รีวิวจากผู้ใช้งาน</h2>
             
             <ReviewList
                 reviews={reviews}
                 onEdit={handleEditReview}
                 onDelete={handleDeleteReview}
+                onReply={handleReply} // ✅ เพิ่มตรงนี้
             />
 
             {user ? (
