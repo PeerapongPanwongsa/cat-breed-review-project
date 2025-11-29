@@ -7,7 +7,6 @@ import (
 	"fmt"
 )
 
-// ===================== Cat Breed Models =====================
 
 type Cat struct {
 	ID              int     `json:"id"`
@@ -19,20 +18,18 @@ type Cat struct {
 	Care            string  `json:"care"`
 	ImageURL        string  `json:"image_url"`
 	
-	// Engagement metrics
+
 	LikeCount       int `json:"like_count"`
 	DislikeCount    int `json:"dislike_count"`
 	DiscussionCount int `json:"discussion_count"`
 	ViewCount       int `json:"view_count"`
 	
-	// User's interaction (if logged in)
 	UserReaction *string `json:"user_reaction,omitempty"`
 	
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	CreatedBy *int      `json:"created_by,omitempty"`
 
-	// (เพิ่ม) รองรับค่าเฉลี่ยดาวจาก Database
 	AverageRatings map[string]float64 `json:"ratings"`
 }
 
@@ -56,12 +53,11 @@ type UpdateCatRequest struct {
 	ImageURL        string  `json:"image_url"`
 }
 
-// ===================== Discussion Models =====================
 
 type Discussion struct {
 	ID              int           `json:"id"`
 	BreedID         int           `json:"breed_id"`
-	// 🚩 เพิ่มฟิลด์ BreedName สำหรับหน้า Profile
+
 	BreedName       string        `json:"breed_name"`
 	UserID          int           `json:"user_id"`
 	Username        string        `json:"username"`
@@ -74,12 +70,11 @@ type Discussion struct {
 	
 	UserReaction    *string       `json:"user_reaction,omitempty"`
 	IsDeleted       bool          `json:"is_deleted"`
-	IsOwner      	bool          `json:"is_owner"` // <- เพิ่มตรงนี้
+	IsOwner      	bool          `json:"is_owner"`
 	CreatedAt       time.Time     `json:"created_at"`
 	UpdatedAt       time.Time     `json:"updated_at"`
 	Replies         []Discussion  `json:"replies,omitempty"`
 
-	// (เพิ่ม) รองรับดาวและแท็ก
 	Ratings   map[string]int `json:"ratings"`
 	Tags      []string       `json:"tags"`
 }
@@ -88,7 +83,7 @@ type CreateDiscussionRequest struct {
 	BreedID  int    `json:"breed_id" binding:"required"`
 	ParentID *int   `json:"parent_id"`
 	Message  string `json:"message" binding:"required,min=1,max=2000"`
-	// (เพิ่ม) รับค่าดาวและแท็กจาก Frontend
+
 	Ratings  map[string]int `json:"ratings"`
 	Tags     []string       `json:"tags"`
 }
@@ -99,7 +94,6 @@ type UpdateDiscussionRequest struct {
 	Tags    []string       `json:"tags"`
 }
 
-// ===================== Reaction Models =====================
 
 type ReactionResponse struct {
 	UserReaction *string `json:"user_reaction"`
@@ -113,14 +107,12 @@ func SetDB(d *sql.DB) {
 	db = d
 }
 
-// Helper function: คำนวณค่าเฉลี่ยของ ratings ทั้งหมด และ Update ลงในตาราง cat_breeds
 func CalculateAndSetAverageRatings(breedID int) error {
 	var avgRatingsJSON []byte
 
-	// 1. Calculate the average of all ratings for the given breed
-	// ใช้ COALESCE(..., 0.0) เพื่อทำให้ AVG ที่เป็น NULL กลายเป็น 0.0 เสมอ
+
 	err := db.QueryRow(`
-		SELECT 
+		SELECT
 			jsonb_build_object(
 				'friendliness', COALESCE(ROUND(AVG(NULLIF((d.ratings ->> 'friendliness')::numeric, 0)), 2), 0.0),
 				'adaptability', COALESCE(ROUND(AVG(NULLIF((d.ratings ->> 'adaptability')::numeric, 0)), 2), 0.0),
@@ -135,7 +127,6 @@ func CalculateAndSetAverageRatings(breedID int) error {
 		return err
 	}
 
-	// 2. Update the cat_breeds table with the new average ratings
 	_, err = db.Exec(`
 		UPDATE cat_breeds 
 		SET 
@@ -152,14 +143,12 @@ func CalculateAndSetAverageRatings(breedID int) error {
 }
 
 
-// GET /cats
 func GetAllCats(currentUserID *int, limit, offset int, search string) ([]Cat, error) {
 	var userID int
 	if currentUserID != nil {
 		userID = *currentUserID
 	}
 
-	// (เพิ่ม) ดึง average_ratings มาด้วย
 	rows, err := db.Query(`
 		SELECT 
 			cb.id, cb.name, cb.origin, cb.history, cb.appearance, cb.temperament, cb.care_instructions, cb.image_url,
@@ -184,21 +173,19 @@ func GetAllCats(currentUserID *int, limit, offset int, search string) ([]Cat, er
 		var cat Cat
 		var userReaction sql.NullString
 		var createdBy sql.NullInt64
-		var avgRatingsJSON []byte // ตัวแปรรับ JSON
-
+		var avgRatingsJSON []byte
 		err := rows.Scan(
 			&cat.ID, &cat.Name, &cat.Origin, &cat.History, &cat.Appearance, &cat.Temperament,
 			&cat.Care, &cat.ImageURL,
 			&cat.LikeCount, &cat.DislikeCount, &cat.DiscussionCount, &cat.ViewCount,
 			&cat.CreatedAt, &cat.UpdatedAt, &createdBy,
-			&avgRatingsJSON, // Scan JSON
+			&avgRatingsJSON,
 			&userReaction,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		// แปลง JSON กลับเป็น Map
 		if len(avgRatingsJSON) > 0 {
 			cat.AverageRatings = make(map[string]float64)
 			_ = json.Unmarshal(avgRatingsJSON, &cat.AverageRatings)
@@ -219,7 +206,6 @@ func GetAllCats(currentUserID *int, limit, offset int, search string) ([]Cat, er
 	return cats, nil
 }
 
-// GET /cat
 func GetCat(id int, currentUserID *int) (Cat, error) {
 	var userID int
 	if currentUserID != nil {
@@ -231,7 +217,6 @@ func GetCat(id int, currentUserID *int) (Cat, error) {
 	var createdBy sql.NullInt64
 	var avgRatingsJSON []byte
 
-	// (เพิ่ม) ดึง average_ratings
 	row := db.QueryRow(`
 		SELECT
 			cb.id, cb.name, cb.origin, cb.history, cb.appearance, cb.temperament, cb.care_instructions, cb.image_url,
@@ -276,7 +261,6 @@ func GetCat(id int, currentUserID *int) (Cat, error) {
 	return cat, nil
 }
 
-// CREATE /cat
 func CreateCat(userID int, req CreateCatRequest) (Cat, error) {
 	var cat Cat
 	var createdBy sql.NullInt64
@@ -308,7 +292,6 @@ func CreateCat(userID int, req CreateCatRequest) (Cat, error) {
 	return cat, nil
 }
 
-// UPDATE /cat
 func UpdateCat(catID int, req UpdateCatRequest) (Cat, error) {
 	var cat Cat
 	var createdBy sql.NullInt64
@@ -348,7 +331,6 @@ func UpdateCat(catID int, req UpdateCatRequest) (Cat, error) {
 	return cat, nil
 }
 
-// DELETE /cat
 func DeleteCat(catID int) error {
 	result, err := db.Exec(`DELETE FROM cat_breeds WHERE id = $1`, catID)
 	if err != nil {
@@ -363,8 +345,6 @@ func DeleteCat(catID int) error {
 	return nil
 }
 
-// ===================== Breed Reaction Functions =====================
-// (ส่วนนี้เหมือนเดิม)
 func ToggleCatReaction(catID, userID int, reactionType string) (ReactionResponse, error) {
 	if reactionType != "like" && reactionType != "dislike" {
 		return ReactionResponse{}, sql.ErrNoRows
@@ -459,9 +439,7 @@ func GetCatReactionStats(catID int, currentUserID *int) (ReactionResponse, error
 	return response, err
 }
 
-// ===================== Discussion Functions =====================
 
-// GetDiscussionReplies (แก้ให้ scan ratings/tags เป็น JSONB)
 func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) ([]Discussion, error) {
 	var userID int
 	if currentUserID != nil {
@@ -508,13 +486,13 @@ func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) (
 			return nil, err
 		}
 
-		// ratings
+
 		if len(ratingsJSON) > 0 {
 			discussion.Ratings = make(map[string]int)
 			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
 		}
 
-		// tags (JSON array -> []string)
+
 		if len(tagsJSON) > 0 {
 			var t []string
 			if err := json.Unmarshal(tagsJSON, &t); err == nil {
@@ -537,7 +515,7 @@ func GetDiscussionReplies(parentID int, currentUserID *int, limit, offset int) (
 	return discussions, nil
 }
 
-// GetCatDiscussions (แก้ให้ scan ratings/tags เป็น JSONB และใช้ GetDiscussionReplies เดิม)
+
 func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Discussion, error) {
 	var userID int
 	if currentUserID != nil {
@@ -584,13 +562,13 @@ func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Disc
 			return nil, err
 		}
 
-		// ratings
+
 		if len(ratingsJSON) > 0 {
 			discussion.Ratings = make(map[string]int)
 			_ = json.Unmarshal(ratingsJSON, &discussion.Ratings)
 		}
 
-		// tags
+
 		if len(tagsJSON) > 0 {
 			var t []string
 			if err := json.Unmarshal(tagsJSON, &t); err == nil {
@@ -607,10 +585,10 @@ func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Disc
 			discussion.UserReaction = &userReaction.String
 		}
 
-		// owner check
+
 		discussion.IsOwner = (currentUserID != nil && discussion.UserID == *currentUserID)
 
-		// load replies
+
 		replies, _ := GetDiscussionReplies(discussion.ID, currentUserID, 100, 0)
 		discussion.Replies = replies
 
@@ -620,13 +598,13 @@ func GetCatDiscussions(catID int, currentUserID *int, limit, offset int) ([]Disc
 	return discussions, nil
 }
 
-// CreateDiscussion (แก้การส่ง ratings/tags → jsonb)
+
 func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, error) {
 	fmt.Println("Received review:", req)
 	var discussion Discussion
 	var parentID sql.NullInt64
 
-	// validate parent if provided
+
 	if req.ParentID != nil {
 		var parentBreedID int
 		err := db.QueryRow(`SELECT breed_id FROM discussions WHERE id = $1`, *req.ParentID).Scan(&parentBreedID)
@@ -641,11 +619,11 @@ func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, erro
 		}
 	}
 
-	// prepare JSON args (nil if empty)
+
 	var ratingsArg interface{} = nil
 	if req.Ratings != nil && len(req.Ratings) > 0 {
 		b, _ := json.Marshal(req.Ratings)
-		ratingsArg = string(b) // pass as string then cast to jsonb in SQL
+		ratingsArg = string(b)
 	}
 
 	var tagsArg interface{} = nil
@@ -654,7 +632,7 @@ func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, erro
 		tagsArg = string(b)
 	}
 
-	// NOTE: cast $5::jsonb and $6::jsonb so passing string works
+
 	row := db.QueryRow(`
         INSERT INTO discussions (breed_id, user_id, parent_id, message, ratings, tags)
         VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb)
@@ -677,13 +655,13 @@ func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, erro
 		return Discussion{}, err
 	}
 
-	// unmarshal ratings
+
 	if len(ratingsBytes) > 0 {
 		discussion.Ratings = make(map[string]int)
 		_ = json.Unmarshal(ratingsBytes, &discussion.Ratings)
 	}
 
-	// unmarshal tags
+
 	if len(tagsBytes) > 0 {
 		var t []string
 		_ = json.Unmarshal(tagsBytes, &t)
@@ -698,7 +676,7 @@ func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, erro
 	_ = db.QueryRow("SELECT username FROM users WHERE id = $1", userID).Scan(&discussion.Username)
 	discussion.IsOwner = true
 
-	// update average if top-level review
+
 	if req.ParentID == nil && len(discussion.Ratings) > 0 {
 		if err := CalculateAndSetAverageRatings(req.BreedID); err != nil {
 			return Discussion{}, err
@@ -708,19 +686,19 @@ func CreateDiscussion(userID int, req CreateDiscussionRequest) (Discussion, erro
 	return discussion, nil
 }
 
-// UpdateDiscussion (แก้ให้ update tags เป็น JSONB)
+
 func UpdateDiscussion(discussionID, userID int, req UpdateDiscussionRequest) (Discussion, error) {
 	var discussion Discussion
 	var parentID sql.NullInt64
 	var breedID int
 
-	// fetch breed_id
+
 	err := db.QueryRow("SELECT breed_id, parent_id FROM discussions WHERE id = $1", discussionID).Scan(&breedID, &parentID)
 	if err != nil {
 		return Discussion{}, err
 	}
 
-	// prepare JSON args
+
 	var ratingsArg interface{} = nil
 	if req.Ratings != nil && len(req.Ratings) > 0 {
 		b, _ := json.Marshal(req.Ratings)
@@ -773,7 +751,7 @@ func UpdateDiscussion(discussionID, userID int, req UpdateDiscussionRequest) (Di
 
 	_ = db.QueryRow("SELECT username FROM users WHERE id = $1", userID).Scan(&discussion.Username)
 
-	// recalc average if top-level
+
 	if !parentID.Valid && len(discussion.Ratings) > 0 {
 		if err := CalculateAndSetAverageRatings(breedID); err != nil {
 			return Discussion{}, err
@@ -784,14 +762,14 @@ func UpdateDiscussion(discussionID, userID int, req UpdateDiscussionRequest) (Di
 }
 
 
-// DeleteDiscussion
+
 func DeleteDiscussion(discussionID, userID int, isAdmin bool) error {
 	var result sql.Result
 	var err error
 	var breedID int
 	var parentID sql.NullInt64
 
-	// 1. ดึงข้อมูลก่อนลบเพื่อหา breed_id และ parent_id
+
 	err = db.QueryRow("SELECT breed_id, parent_id FROM discussions WHERE id = $1", discussionID).Scan(&breedID, &parentID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -800,7 +778,7 @@ func DeleteDiscussion(discussionID, userID int, isAdmin bool) error {
 		return err
 	}
 
-	// 2. ทำการ Soft Delete
+
 	if isAdmin {
 		result, err = db.Exec(`
 			UPDATE discussions 
@@ -824,8 +802,8 @@ func DeleteDiscussion(discussionID, userID int, isAdmin bool) error {
 		return sql.ErrNoRows
 	}
 
-	// 3. 🚩 ถ้าเป็นการลบรีวิวหลัก ให้คำนวณค่าเฉลี่ยใหม่
-	if !parentID.Valid { // parent_id IS NULL
+
+	if !parentID.Valid {
 		if err := CalculateAndSetAverageRatings(breedID); err != nil {
 			return err
 		}
@@ -899,7 +877,6 @@ func ToggleDiscussionReaction(discussionID, userID int, reactionType string) (Re
 	return response, err
 }
 
-// GetDiscussionsByUserID ดึงรีวิวทั้งหมดของ User คนนึง (ปรับปรุงให้ดึงชื่อสายพันธุ์)
 func GetDiscussionsByUserID(userID int) ([]Discussion, error) {
 	rows, err := db.Query(`
 		SELECT 

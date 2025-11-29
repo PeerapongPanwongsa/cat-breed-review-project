@@ -7,13 +7,17 @@ import (
 
 	"os"
 	"time"
-
+	"strings"
 	"backgo/internal/handler"
 	"backgo/internal/infoDB"
 	"backgo/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+
+	_ "backgo/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func getEnv(key, defaultValue string) string {
@@ -26,7 +30,6 @@ func getEnv(key, defaultValue string) string {
 var db *sql.DB
 
 func initDB() {
-	// ... (โค้ดเดิม)
 	var err error
 	host := getEnv("DB_HOST", "localhost")
 	port := getEnv("DB_PORT", "5432")
@@ -54,33 +57,26 @@ func initDB() {
 	log.Println("Connected to the database successfully!")
 }
 
-// เพิ่ม URL ที่อนุญาตให้เข้าถึง (สำคัญสำหรับการใช้ withCredentials)
-var allowedOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000"}
+var allowedOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000",
+							"https://my-app.vercel.app","http://127.0.0.1:8080","http://localhost:8080"}
 
-// ฟังก์ชันจัดการ CORS ที่ยืดหยุ่นสำหรับ Development
 func corsMiddleware() gin.HandlerFunc {
-	// ... (โค้ดเดิม)
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 
 		allowed := false
 		for _, allowedOrigin := range allowedOrigins {
-			if origin == allowedOrigin {
+			if origin == allowedOrigin || strings.HasPrefix(origin, allowedOrigin) {
 				allowed = true
 				break
 			}
 		}
 
-		// ถ้า Origin ถูกส่งมา และถูกอนุญาต, ให้ Mirror Origin นั้นทันที และอนุญาต Credentials
 		if allowed {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		} else if origin != "" {
-			// กรณีที่ Origin ไม่ตรง แต่มี Origin ส่งมา เราจะไม่ส่ง Allow-Credentials
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 
-		// Header ที่เหลือเหมือนเดิม
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
@@ -93,6 +89,13 @@ func corsMiddleware() gin.HandlerFunc {
 	}
 }
 
+// @title           Cat Breeds API
+// @version         1.0
+// @description     Cat Breeds API with auth, reactions and discussions.
+
+// @host            localhost:8080
+// @BasePath        /api
+
 func main() {
 	initDB()
 	infoDB.SetDB(db)
@@ -102,7 +105,8 @@ func main() {
 
 	r.Use(corsMiddleware())
 
-	// ===================== PUBLIC ROUTES =====================
+    r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	public := r.Group("/api")
 	{
 		public.GET("/health", func(c *gin.Context) {
@@ -112,7 +116,6 @@ func main() {
 			})
 		})
 
-		// ✅ เพิ่ม Route สำหรับการลงทะเบียนผู้ใช้ใหม่ (POST /api/users)
 		public.POST("/users", handler.RegisterHandler)
 
 		auth := public.Group("/auth")
@@ -128,7 +131,6 @@ func main() {
 		public.GET("/cats/:id/discussions", handler.GetCatDiscussionsHandler)
 	}
 
-	// ===================== USER PROTECTED ROUTES =====================
 	user := r.Group("/api")
 	user.Use(middleware.AuthMiddleware())
 	{
@@ -142,7 +144,6 @@ func main() {
 		user.POST("/discussions/:id/react", handler.ToggleDiscussionReactionHandler)
 	}
 
-	// ===================== ADMIN ROUTES =====================
 	admin := r.Group("/api/admin")
 	admin.Use(middleware.AuthMiddleware(), middleware.RequireRole("admin"))
 	{

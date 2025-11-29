@@ -1,11 +1,11 @@
 package infoDB
 
-// 💡 ต้องเพิ่ม import "strings"
+
 import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings" // ✅ เพิ่ม sql import สำหรับการจัดการ DB
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ===================== Models =====================
+
 type User struct {
 	ID           int       `json:"id"`
 	Username     string    `json:"username"`
@@ -23,7 +23,6 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-// UserInfo: ใช้สำหรับส่งกลับไป Frontend
 type UserInfo struct {
 	ID       int      `json:"id"`
 	Username string   `json:"username"`
@@ -37,12 +36,12 @@ type UserBaseInfo struct {
 	Email    string `json:"email"`
 }
 
-// ✅ เพิ่ม RegisterRequest
+
 type RegisterRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=50"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=3"`
-	Role     string `json:"role"` // รับ role มาจาก frontend (เพื่อกำหนด default)
+	Role     string `json:"role"`
 }
 
 type LoginRequest struct {
@@ -61,14 +60,14 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-// ===================== JWT Secret =====================
+
 var jwtSecret = []byte("my-super-secret-key-change-in-production-2024")
 
 func SetJWTSecret(secret string) {
 	jwtSecret = []byte(secret)
 }
 
-// ===================== Password Functions =====================
+
 func HashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	if err != nil {
@@ -81,9 +80,9 @@ func VerifyPassword(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
-// ===================== JWT Functions =====================
+
 func GenerateAccessToken(userID int, username string, roles []string) (string, error) {
-	// ... (โค้ดเดิม)
+
 	expirationTime := time.Now().Add(15 * time.Minute)
 	claims := &CustomClaims{
 		UserID:   userID,
@@ -100,7 +99,7 @@ func GenerateAccessToken(userID int, username string, roles []string) (string, e
 }
 
 func GenerateRefreshToken(userID int, username string) (string, error) {
-	// ... (โค้ดเดิม)
+
 	expirationTime := time.Now().Add(7 * 24 * time.Hour)
 	claims := &CustomClaims{
 		UserID:   userID,
@@ -117,7 +116,7 @@ func GenerateRefreshToken(userID int, username string) (string, error) {
 }
 
 func VerifyToken(tokenString string) (*CustomClaims, error) {
-	// ... (โค้ดเดิม)
+
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -133,11 +132,11 @@ func VerifyToken(tokenString string) (*CustomClaims, error) {
 	return nil, fmt.Errorf("invalid token")
 }
 
-// ===================== Database Queries =====================
 
-// ✅ ฟังก์ชันใหม่: สร้างผู้ใช้และกำหนดบทบาทเริ่มต้น
+
+
 func CreateUser(req RegisterRequest) (User, error) {
-	// 1. Hash Password
+
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
 		return User{}, fmt.Errorf("failed to hash password: %w", err)
@@ -158,7 +157,7 @@ func CreateUser(req RegisterRequest) (User, error) {
 		}
 	}()
 
-	// 2. Insert User
+
 	var newUser User
 	err = tx.QueryRow(`
 		INSERT INTO users (username, email, password_hash, is_active)
@@ -168,15 +167,14 @@ func CreateUser(req RegisterRequest) (User, error) {
 		&newUser.ID, &newUser.Username, &newUser.Email, &newUser.IsActive, &newUser.CreatedAt,
 	)
 	if err != nil {
-		// ตรวจสอบ Unique Constraint Error (username/email ซ้ำ)
+
 		if strings.Contains(err.Error(), "duplicate key value") {
 			return User{}, fmt.Errorf("username or email already exists")
 		}
 		return User{}, err
 	}
 
-	// 3. Assign Default Role ('user' หรือ 'member')
-	// Frontend ส่ง role: 'member' มา แต่ใน DB ใช้ 'user'
+
 	defaultRole := "user"
 
 	_, err = tx.Exec(`
@@ -191,9 +189,9 @@ func CreateUser(req RegisterRequest) (User, error) {
 	return newUser, nil
 }
 
-// GetUserByUsername retrieves user by username
+
 func GetUserByUsername(username string) (User, error) {
-	// ... (โค้ดเดิม)
+
 	var user User
 	query := `SELECT id, username, email, password_hash, is_active, created_at 
 			  FROM users WHERE username = $1`
@@ -210,9 +208,9 @@ func GetUserByUsername(username string) (User, error) {
 	return user, err
 }
 
-// GetUserBaseInfoByID retrieves user's base info by ID
+
 func GetUserBaseInfoByID(userID int) (UserBaseInfo, error) {
-	// ... (โค้ดเดิม)
+
 	var info UserBaseInfo
 	query := `SELECT id, username, email FROM users WHERE id = $1`
 
@@ -224,9 +222,9 @@ func GetUserBaseInfoByID(userID int) (UserBaseInfo, error) {
 	return info, err
 }
 
-// GetUserRoles retrieves all roles for a user
+
 func GetUserRoles(userID int) ([]string, error) {
-	// ... (โค้ดเดิม)
+
 	query := `
 		SELECT r.name
 		FROM roles r
@@ -250,9 +248,9 @@ func GetUserRoles(userID int) ([]string, error) {
 	return roles, nil
 }
 
-// CheckUserPermission checks if user has specific permission
+
 func CheckUserPermission(userID int, permission string) bool {
-	// ... (โค้ดเดิม)
+
 	query := `
 		SELECT COUNT(*)
 		FROM permissions p
@@ -269,17 +267,15 @@ func CheckUserPermission(userID int, permission string) bool {
 	return count > 0
 }
 
-// UpdateLastLogin updates user's last login timestamp
+
 func UpdateLastLogin(userID int) error {
-	// ... (โค้ดเดิม)
+
 	query := `UPDATE users SET last_login = NOW() WHERE id = $1`
 	_, err := db.Exec(query, userID)
 	return err
 }
 
-// ===================== Refresh Token Queries =====================
 
-// StoreRefreshToken stores refresh token in database
 func StoreRefreshToken(userID int, token string, expiresAt time.Time) error {
 	query := `
 		INSERT INTO refresh_tokens (user_id, token, expires_at)
@@ -289,7 +285,7 @@ func StoreRefreshToken(userID int, token string, expiresAt time.Time) error {
 	return err
 }
 
-// RevokeRefreshToken revokes a refresh token
+
 func RevokeRefreshToken(token string) error {
 	query := `
 		UPDATE refresh_tokens
@@ -300,7 +296,7 @@ func RevokeRefreshToken(token string) error {
 	return err
 }
 
-// IsRefreshTokenValid checks if refresh token is valid
+
 func IsRefreshTokenValid(token string) (int, bool) {
 	query := `
 		SELECT user_id
@@ -317,9 +313,7 @@ func IsRefreshTokenValid(token string) (int, bool) {
 	return userID, true
 }
 
-// ===================== Audit Log =====================
 
-// LogAudit logs user action to audit_logs table
 func LogAudit(userID int, action, resource string, resourceID interface{}, details map[string]interface{}, c *gin.Context) {
 	detailsJSON, _ := json.Marshal(details)
 	query := `

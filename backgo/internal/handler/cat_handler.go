@@ -4,41 +4,52 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
-	"log" // FIX: เพิ่ม log import เพื่อแก้ไข Error
+	"log"
 
 	"backgo/internal/infoDB"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ===================== Cat Breed Handlers =====================
+
 
 // GetAllCatsHandler handles GET /api/cats
+
+// GetAllCatsHandler godoc
+// @Summary      Get all cats
+// @Description  List all cat breeds with optional search and pagination
+// @Tags         cats
+// @Produce      json
+// @Param        limit   query     int     false  "Limit number of results"  default(10)
+// @Param        offset  query     int     false  "Offset for pagination"    default(0)
+// @Param        q       query     string  false  "Search keyword"
+// @Success      200     {object}  map[string]interface{}  "data: []infoDB.Cat, count: int"
+// @Failure      500     {object}  map[string]interface{}  "Failed to fetch cat data from database"
+// @Router       /cats [get]
 func GetAllCatsHandler(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	
-	// (1) รับคำค้นหาจาก URL parameter 'q'
-	search := c.DefaultQuery("q", "") 
+	search := c.DefaultQuery("q", "")
 
-	// Get current user ID if authenticated
+
 	var currentUserID *int
 	if userID, exists := c.Get("user_id"); exists {
 		uid := userID.(int)
 		currentUserID = &uid
 	}
 
-	// (2) ส่ง 'search' เข้าไปเป็น parameter ตัวที่ 4
+
 	cats, err := infoDB.GetAllCats(currentUserID, limit, offset, search)
 	
 	if err != nil {
-		// เพิ่ม log เพื่อดูว่า DB query error หรือไม่
+
 		log.Printf("DB Error fetching cats: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch cat data from database", "details": err.Error()})
 		return
 	}
 
-	// เพิ่ม log เพื่อยืนยันว่าดึงข้อมูลมาได้กี่ตัว
+
 	log.Printf("Successfully fetched %d cats.", len(cats))
 
 	c.JSON(http.StatusOK, gin.H{
@@ -48,6 +59,18 @@ func GetAllCatsHandler(c *gin.Context) {
 }
 
 // GetCatHandler handles GET /api/cats/:id
+
+// GetCatHandler godoc
+// @Summary      Get cat by ID
+// @Description  Get cat detail by ID
+// @Tags         cats
+// @Produce      json
+// @Param        id   path      int  true  "Cat ID"
+// @Success      200  {object}  infoDB.Cat
+// @Failure      400  {object}  map[string]interface{}  "Invalid ID"
+// @Failure      404  {object}  map[string]interface{}  "Cat not found"
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"
+// @Router       /cats/{id} [get]
 func GetCatHandler(c *gin.Context) {
 	catID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -55,7 +78,7 @@ func GetCatHandler(c *gin.Context) {
 		return
 	}
 
-	// Get current user ID if authenticated
+
 	var currentUserID *int
 	if userID, exists := c.Get("user_id"); exists {
 		uid := userID.(int)
@@ -75,6 +98,20 @@ func GetCatHandler(c *gin.Context) {
 }
 
 // CreateCatHandler handles POST /api/admin/cats (Admin only)
+
+// CreateCatHandler godoc
+// @Summary      Create new cat (admin)
+// @Description  Create a new cat breed (admin only)
+// @Tags         admin, cats
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      infoDB.CreateCatRequest  true  "Cat data"
+// @Success      201   {object}  infoDB.Cat
+// @Failure      400   {object}  map[string]interface{}  "Invalid request body"
+// @Failure      401   {object}  map[string]interface{}  "Unauthorized"
+// @Failure      500   {object}  map[string]interface{}  "Internal server error"
+// @Router       /admin/cats [post]
 func CreateCatHandler(c *gin.Context) {
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
@@ -102,6 +139,22 @@ func CreateCatHandler(c *gin.Context) {
 }
 
 // UpdateCatHandler handles PUT /api/admin/cats/:id (Admin only)
+
+// UpdateCatHandler godoc
+// @Summary      Update cat (admin)
+// @Description  Update existing cat breed (admin only)
+// @Tags         admin, cats
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id    path      int                      true  "Cat ID"
+// @Param        body  body      infoDB.UpdateCatRequest  true  "Updated cat data"
+// @Success      200   {object}  infoDB.Cat
+// @Failure      400   {object}  map[string]interface{}  "Invalid ID or request body"
+// @Failure      401   {object}  map[string]interface{}  "Unauthorized"
+// @Failure      404   {object}  map[string]interface{}  "Cat not found"
+// @Failure      500   {object}  map[string]interface{}  "Internal server error"
+// @Router       /admin/cats/{id} [put]
 func UpdateCatHandler(c *gin.Context) {
 	_, exists := c.Get("user_id")
 	if !exists {
@@ -134,6 +187,20 @@ func UpdateCatHandler(c *gin.Context) {
 }
 
 // DeleteCatHandler handles DELETE /api/admin/cats/:id (Admin only)
+
+// DeleteCatHandler godoc
+// @Summary      Delete cat (admin)
+// @Description  Delete a cat breed by ID (admin only)
+// @Tags         admin, cats
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id   path      int  true  "Cat ID"
+// @Success      200  {object}  map[string]interface{}  "Cat deleted successfully"
+// @Failure      400  {object}  map[string]interface{}  "Invalid ID"
+// @Failure      401  {object}  map[string]interface{}  "Unauthorized"
+// @Failure      404  {object}  map[string]interface{}  "Cat not found"
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"
+// @Router       /admin/cats/{id} [delete]
 func DeleteCatHandler(c *gin.Context) {
 	_, exists := c.Get("user_id")
 	if !exists {
@@ -159,9 +226,7 @@ func DeleteCatHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "cat deleted successfully"})
 }
 
-// ===================== Cat Reaction Handlers (Like/Dislike) =====================
 
-// ToggleCatReactionHandler handles POST /api/cats/:id/react
 func ToggleCatReactionHandler(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -175,9 +240,7 @@ func ToggleCatReactionHandler(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ReactionType string `json:"reaction_type" binding:"required,oneof=like dislike"`
-	}
+	var req infoDB.ReactionRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
@@ -194,6 +257,17 @@ func ToggleCatReactionHandler(c *gin.Context) {
 }
 
 // GetCatReactionStatsHandler handles GET /api/cats/:id/reactions
+
+// GetCatReactionStatsHandler godoc
+// @Summary      Get cat reaction stats
+// @Description  Get like/dislike statistics for a cat
+// @Tags         cats, reactions
+// @Produce      json
+// @Param        id   path      int  true  "Cat ID"
+// @Success      200  {object}  infoDB.ReactionResponse
+// @Failure      400  {object}  map[string]interface{}  "Invalid ID"
+// @Failure      500  {object}  map[string]interface{}  "Internal server error"
+// @Router       /cats/{id}/reactions [get]
 func GetCatReactionStatsHandler(c *gin.Context) {
 	catID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -219,6 +293,19 @@ func GetCatReactionStatsHandler(c *gin.Context) {
 // ===================== Discussion Handlers =====================
 
 // GetCatDiscussionsHandler handles GET /api/cats/:id/discussions
+
+// GetCatDiscussionsHandler godoc
+// @Summary      Get cat discussions
+// @Description  Get discussions for a specific cat
+// @Tags         discussions
+// @Produce      json
+// @Param        id      path      int  true  "Cat ID"
+// @Param        limit   query     int  false  "Limit"   default(20)
+// @Param        offset  query     int  false  "Offset"  default(0)
+// @Success      200     {object}  map[string]interface{}  "data: []infoDB.Discussion, count: int"
+// @Failure      400     {object}  map[string]interface{}  "Invalid ID"
+// @Failure      500     {object}  map[string]interface{}  "Internal server error"
+// @Router       /cats/{id}/discussions [get]
 func GetCatDiscussionsHandler(c *gin.Context) {
 	catID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -247,7 +334,6 @@ func GetCatDiscussionsHandler(c *gin.Context) {
 	})
 }
 
-// CreateDiscussionHandler handles POST /api/discussions
 func CreateDiscussionHandler(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -270,7 +356,6 @@ func CreateDiscussionHandler(c *gin.Context) {
 	c.JSON(http.StatusCreated, discussion)
 }
 
-// UpdateDiscussionHandler handles PUT /api/discussions/:id
 func UpdateDiscussionHandler(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -302,7 +387,6 @@ func UpdateDiscussionHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, discussion)
 }
 
-// DeleteDiscussionHandler handles DELETE /api/discussions/:id
 func DeleteDiscussionHandler(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -316,7 +400,6 @@ func DeleteDiscussionHandler(c *gin.Context) {
 		return
 	}
 
-	// Check if user is admin/moderator
 	roles, _ := c.Get("roles")
 	isAdmin := false
 	if roles != nil {
@@ -340,7 +423,6 @@ func DeleteDiscussionHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "discussion deleted successfully"})
 }
 
-// ToggleDiscussionReactionHandler handles POST /api/discussions/:id/react
 func ToggleDiscussionReactionHandler(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -354,9 +436,7 @@ func ToggleDiscussionReactionHandler(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		ReactionType string `json:"reaction_type" binding:"required,oneof=like dislike"`
-	}
+	var req infoDB.ReactionRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body", "details": err.Error()})
@@ -372,7 +452,6 @@ func ToggleDiscussionReactionHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GetMyDiscussionsHandler handles GET /api/discussions/me
 func GetMyDiscussionsHandler(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -386,7 +465,7 @@ func GetMyDiscussionsHandler(c *gin.Context) {
 		return
 	}
 
-	// ✅ Wrap ใน object เหมือน Handler อื่นๆ
+	
 	c.JSON(http.StatusOK, gin.H{
 		"data":  discussions,
 		"count": len(discussions),

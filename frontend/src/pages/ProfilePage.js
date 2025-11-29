@@ -4,7 +4,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
 
 import MyReviewList from '../components/profile/MyReviewList';
-// import './Profile.css';
+
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();

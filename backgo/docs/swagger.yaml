@@ -1,0 +1,491 @@
+basePath: /api
+definitions:
+  infoDB.Cat:
+    properties:
+      appearance:
+        type: string
+      care:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: integer
+      discussion_count:
+        type: integer
+      dislike_count:
+        type: integer
+      history:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      like_count:
+        description: Engagement metrics
+        type: integer
+      name:
+        type: string
+      origin:
+        type: string
+      ratings:
+        additionalProperties:
+          format: float64
+          type: number
+        description: (เพิ่ม) รองรับค่าเฉลี่ยดาวจาก Database
+        type: object
+      temperament:
+        type: string
+      updated_at:
+        type: string
+      user_reaction:
+        description: User's interaction (if logged in)
+        type: string
+      view_count:
+        type: integer
+    type: object
+  infoDB.CreateCatRequest:
+    properties:
+      appearance:
+        type: string
+      care:
+        type: string
+      history:
+        type: string
+      image_url:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      origin:
+        type: string
+      temperament:
+        type: string
+    required:
+    - name
+    type: object
+  infoDB.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  infoDB.ReactionResponse:
+    properties:
+      dislike_count:
+        type: integer
+      like_count:
+        type: integer
+      user_reaction:
+        type: string
+    type: object
+  infoDB.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 3
+        type: string
+      role:
+        description: รับ role มาจาก frontend (เพื่อกำหนด default)
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  infoDB.UpdateCatRequest:
+    properties:
+      appearance:
+        type: string
+      care:
+        type: string
+      history:
+        type: string
+      image_url:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      origin:
+        type: string
+      temperament:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Cat Breeds API with auth, reactions and discussions.
+  title: Cat Breeds API
+  version: "1.0"
+paths:
+  /admin/cats:
+    post:
+      consumes:
+      - application/json
+      description: Create a new cat breed (admin only)
+      parameters:
+      - description: Cat data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/infoDB.CreateCatRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/infoDB.Cat'
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create new cat (admin)
+      tags:
+      - admin
+      - cats
+  /admin/cats/{id}:
+    delete:
+      description: Delete a cat breed by ID (admin only)
+      parameters:
+      - description: Cat ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cat deleted successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Cat not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete cat (admin)
+      tags:
+      - admin
+      - cats
+    put:
+      consumes:
+      - application/json
+      description: Update existing cat breed (admin only)
+      parameters:
+      - description: Cat ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated cat data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/infoDB.UpdateCatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/infoDB.Cat'
+        "400":
+          description: Invalid ID or request body
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Cat not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update cat (admin)
+      tags:
+      - admin
+      - cats
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and issue tokens (via cookies)
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/infoDB.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User info with roles
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Invalid credentials or account disabled
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      description: Clear access and refresh tokens, revoke refresh token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Logged out successfully
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Logout
+      tags:
+      - auth
+  /cats:
+    get:
+      description: List all cat breeds with optional search and pagination
+      parameters:
+      - default: 10
+        description: Limit number of results
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset for pagination
+        in: query
+        name: offset
+        type: integer
+      - description: Search keyword
+        in: query
+        name: q
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: []infoDB.Cat, count: int'
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Failed to fetch cat data from database
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all cats
+      tags:
+      - cats
+  /cats/{id}:
+    get:
+      description: Get cat detail by ID
+      parameters:
+      - description: Cat ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/infoDB.Cat'
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Cat not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get cat by ID
+      tags:
+      - cats
+  /cats/{id}/discussions:
+    get:
+      description: Get discussions for a specific cat
+      parameters:
+      - description: Cat ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 20
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'data: []infoDB.Discussion, count: int'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get cat discussions
+      tags:
+      - discussions
+  /cats/{id}/reactions:
+    get:
+      description: Get like/dislike statistics for a cat
+      parameters:
+      - description: Cat ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/infoDB.ReactionResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get cat reaction stats
+      tags:
+      - cats
+      - reactions
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: Register info
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/infoDB.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request body
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Username or Email already exists
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register new user
+      tags:
+      - auth
+swagger: "2.0"

@@ -1,7 +1,3 @@
--- catbasedetail/docker/init.sql
-
--- ===================== USERS & AUTHENTICATION =====================
-
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -17,7 +13,7 @@ CREATE TABLE users (
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
 
--- ===================== ROLES & PERMISSIONS =====================
+
 
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
@@ -44,7 +40,7 @@ CREATE TABLE role_permissions (
     PRIMARY KEY (role_id, permission_id)
 );
 
--- ===================== REFRESH TOKENS =====================
+
 
 CREATE TABLE refresh_tokens (
     id SERIAL PRIMARY KEY,
@@ -58,7 +54,7 @@ CREATE TABLE refresh_tokens (
 CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token);
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 
--- ===================== AUDIT LOGS =====================
+
 
 CREATE TABLE audit_logs (
     id SERIAL PRIMARY KEY,
@@ -76,7 +72,7 @@ CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 
--- ===================== CAT BREEDS (Admin manages) =====================
+
 
 CREATE TABLE cat_breeds (
     id SERIAL PRIMARY KEY,
@@ -88,7 +84,7 @@ CREATE TABLE cat_breeds (
     care_instructions TEXT,
     image_url TEXT,
     
-    -- Engagement metrics
+
     like_count INTEGER DEFAULT 0,
     dislike_count INTEGER DEFAULT 0,
     discussion_count INTEGER DEFAULT 0,
@@ -105,7 +101,7 @@ CREATE TABLE cat_breeds (
 CREATE INDEX idx_cat_breeds_name ON cat_breeds(name);
 CREATE INDEX idx_cat_breeds_created_at ON cat_breeds(created_at);
 
--- ===================== BREED REACTIONS (Like/Dislike) =====================
+
 
 CREATE TYPE reaction_type_enum AS ENUM ('like', 'dislike');
 
@@ -117,23 +113,23 @@ CREATE TABLE breed_reactions (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
-    -- ผู้ใช้แต่ละคนกด like หรือ dislike ได้อันเดียวต่อ breed
+
     CONSTRAINT unique_user_breed_reaction UNIQUE (breed_id, user_id)
 );
 
 CREATE INDEX idx_breed_reactions_breed_id ON breed_reactions(breed_id);
 CREATE INDEX idx_breed_reactions_user_id ON breed_reactions(user_id);
 
--- ===================== DISCUSSIONS (Comments) =====================
+
 
 CREATE TABLE discussions (
     id SERIAL PRIMARY KEY,
     breed_id INTEGER NOT NULL REFERENCES cat_breeds(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     message TEXT NOT NULL,
-    parent_id INTEGER REFERENCES discussions(id) ON DELETE CASCADE, -- สำหรับ reply
+    parent_id INTEGER REFERENCES discussions(id) ON DELETE CASCADE,
     
-    -- Engagement
+
     like_count INTEGER DEFAULT 0,
     dislike_count INTEGER DEFAULT 0,
     reply_count INTEGER DEFAULT 0,
@@ -152,7 +148,7 @@ CREATE INDEX idx_discussions_user_id ON discussions(user_id);
 CREATE INDEX idx_discussions_parent_id ON discussions(parent_id);
 CREATE INDEX idx_discussions_created_at ON discussions(created_at);
 
--- ===================== DISCUSSION REACTIONS (Like/Dislike Comments) =====================
+
 
 CREATE TABLE discussion_reactions (
     id SERIAL PRIMARY KEY,
@@ -161,16 +157,16 @@ CREATE TABLE discussion_reactions (
     reaction_type reaction_type_enum NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
-    -- ป้องกันกดซ้ำ
+
     CONSTRAINT unique_user_discussion_reaction UNIQUE (discussion_id, user_id)
 );
 
 CREATE INDEX idx_discussion_reactions_discussion_id ON discussion_reactions(discussion_id);
 CREATE INDEX idx_discussion_reactions_user_id ON discussion_reactions(user_id);
 
--- ===================== TRIGGERS =====================
 
--- Auto-update updated_at timestamp
+
+
 CREATE OR REPLACE FUNCTION update_modified_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -179,7 +175,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply to all tables with updated_at
+
 CREATE TRIGGER update_cat_breeds_modtime
     BEFORE UPDATE ON cat_breeds
     FOR EACH ROW EXECUTE FUNCTION update_modified_column();
@@ -192,9 +188,7 @@ CREATE TRIGGER update_discussions_modtime
     BEFORE UPDATE ON discussions
     FOR EACH ROW EXECUTE FUNCTION update_modified_column();
 
--- ===================== BREED REACTION COUNTERS =====================
 
--- Update cat_breeds like/dislike count
 CREATE OR REPLACE FUNCTION update_breed_reaction_count()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -206,7 +200,7 @@ BEGIN
         END IF;
         RETURN NEW;
     ELSIF (TG_OP = 'UPDATE') THEN
-        -- ถ้าเปลี่ยนจาก like -> dislike หรือ dislike -> like
+
         IF OLD.reaction_type = 'like' AND NEW.reaction_type = 'dislike' THEN
             UPDATE cat_breeds SET like_count = like_count - 1, dislike_count = dislike_count + 1 
             WHERE id = NEW.breed_id;
@@ -231,9 +225,7 @@ CREATE TRIGGER trigger_breed_reaction_count
 AFTER INSERT OR UPDATE OR DELETE ON breed_reactions
 FOR EACH ROW EXECUTE FUNCTION update_breed_reaction_count();
 
--- ===================== DISCUSSION REACTION COUNTERS =====================
 
--- Update discussions like/dislike count
 CREATE OR REPLACE FUNCTION update_discussion_reaction_count()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -269,15 +261,13 @@ CREATE TRIGGER trigger_discussion_reaction_count
 AFTER INSERT OR UPDATE OR DELETE ON discussion_reactions
 FOR EACH ROW EXECUTE FUNCTION update_discussion_reaction_count();
 
--- ===================== DISCUSSION COUNTER =====================
 
--- Update cat_breeds discussion_count
 CREATE OR REPLACE FUNCTION update_breed_discussion_count()
 RETURNS TRIGGER AS $$
 BEGIN
     IF (TG_OP = 'INSERT') THEN
         UPDATE cat_breeds SET discussion_count = discussion_count + 1 WHERE id = NEW.breed_id;
-        -- Update parent reply count if this is a reply
+
         IF NEW.parent_id IS NOT NULL THEN
             UPDATE discussions SET reply_count = reply_count + 1 WHERE id = NEW.parent_id;
         END IF;
@@ -298,38 +288,35 @@ AFTER INSERT OR DELETE ON discussions
 FOR EACH ROW EXECUTE FUNCTION update_breed_discussion_count();
 
 
--- ===================== INITIAL DATA =====================
 
--- Insert default roles (✅ เก็บไว้)
 INSERT INTO roles (name) VALUES
 ('admin'),
 ('user');
 
--- Insert permissions (✅ เก็บไว้)
+
 INSERT INTO permissions (name) VALUES
--- Cat breed permissions
+
 ('breed.create'),
 ('breed.update'),
 ('breed.delete'),
 ('breed.view'),
 
--- Discussion permissions
+
 ('discussion.create'),
 ('discussion.update'),
 ('discussion.delete'),
 ('discussion.delete.any'),
 
--- Reaction permissions
+
 ('reaction.create');
 
--- Assign permissions to roles (Role -> Permission) (✅ เก็บไว้)
--- Admin gets all permissions
+
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id FROM roles r, permissions p WHERE r.name = 'admin';
 
--- User gets limited permissions
+
 INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id FROM roles r, permissions p 
+SELECT r.id, p.id FROM roles r, permissions p
 WHERE r.name = 'user' AND p.name IN (
     'breed.view',
     'discussion.create', 'discussion.update', 'discussion.delete',
@@ -337,7 +324,7 @@ WHERE r.name = 'user' AND p.name IN (
 );
 
 
--- Insert sample cat breeds (✅ เก็บไว้)
+
 INSERT INTO cat_breeds (name, origin, history, appearance, temperament, care_instructions, image_url) VALUES
 -- 1. Persian
 (
@@ -448,12 +435,6 @@ Breeder มุ่งพัฒนาให้ Ragdoll มีร่างกาย
 );
 
 
--- ===================== INSERT USERS & ADMIN =====================
-
--- สร้าง Users ทั่วไป (✅ เก็บไว้)
--- หมายเหตุ: password_hash ในตัวอย่างนี้เป็นการ hash จาก bcrypt สำหรับรหัสผ่าน "password123"
--- ในการใช้งานจริงควรใช้ bcrypt หรือ argon2 ในการ hash รหัสผ่าน
-
 INSERT INTO users (username, email, password_hash, is_active) VALUES
 -- Admin user (password: admin123)
 ('admin', 'admin@catbreeds.com', '$2a$12$Jh17GEOUujYkjq/l/8JFsuSL.6xNamnMKVPWmyHskZZZUGU24Gbwq', true),
@@ -463,17 +444,12 @@ INSERT INTO users (username, email, password_hash, is_active) VALUES
 -- Regular users (password: password1234)
 ('jane_smith', 'jane@example.com', '$2a$12$5.XT7TZatli8vo3/Wsiez.OLaEc.AcTT29xVXeHKTqSC3hBGr6s..', true);
 
--- ❌ ส่วนที่ถูกลบออก: การเพิ่ม Roles และ Permissions ซ้ำซ้อน
--- ===================== ASSIGN ROLES TO USERS ===================== (✅ เก็บไว้)
-
--- Regular users get user role
 INSERT INTO user_roles (user_id, role_id) VALUES
-(1, 1), -- admin user gets admin role
-(2, 2), -- john_doe gets user role
-(3, 2); -- jane_smith gets user role
+(1, 1),
+(2, 2),
+(3, 2);
 
--- ❌ ส่วนที่ถูกลบออก: การกำหนดสิทธิ์ซ้ำซ้อน
--- ===================== UPDATE LAST LOGIN ===================== (✅ เก็บไว้)
+
 
 UPDATE users
 SET last_login = CURRENT_TIMESTAMP

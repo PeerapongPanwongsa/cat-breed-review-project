@@ -4,15 +4,27 @@ import (
 	"database/sql"
 	"net/http"
 	"time"
-
+	"os"
 	"backgo/internal/infoDB"
 
 	"github.com/gin-gonic/gin"
 )
 
-// ===================== Authentication Handlers =====================
 
-// ✅ ฟังก์ชันใหม่: RegisterHandler handles POST /api/users
+// RegisterHandler handles POST /api/register
+
+// RegisterHandler godoc
+// @Summary      Register new user
+// @Description  Create a new user account
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      infoDB.RegisterRequest  true  "Register info"
+// @Success      201   {object}  map[string]interface{}  "User created successfully"
+// @Failure      400   {object}  map[string]interface{}  "Invalid request body"
+// @Failure      409   {object}  map[string]interface{}  "Username or Email already exists"
+// @Failure      500   {object}  map[string]interface{}  "Internal server error"
+// @Router       /register [post]
 func RegisterHandler(c *gin.Context) {
 	var req infoDB.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -20,7 +32,6 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	// 1. ตรวจสอบว่า Username/Email ถูกใช้ไปแล้วหรือไม่ (CreateUser จะช่วยตรวจสอบ)
 	user, err := infoDB.CreateUser(req)
 
 	if err != nil {
@@ -32,10 +43,8 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	// 2. Log Audit
 	infoDB.LogAudit(user.ID, "register", "auth", nil, gin.H{"username": user.Username}, c)
 
-	// 3. ส่ง Response สำเร็จ
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "User created successfully",
 		"user_id": user.ID,
@@ -43,15 +52,26 @@ func RegisterHandler(c *gin.Context) {
 }
 
 // LoginHandler handles POST /api/auth/login
+
+// LoginHandler godoc
+// @Summary      Login
+// @Description  Authenticate user and issue tokens (via cookies)
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body      infoDB.LoginRequest  true  "Login credentials"
+// @Success      200   {object}  map[string]interface{}  "User info with roles"
+// @Failure      400   {object}  map[string]interface{}  "Invalid request"
+// @Failure      401   {object}  map[string]interface{}  "Invalid credentials or account disabled"
+// @Failure      500   {object}  map[string]interface{}  "Internal server error"
+// @Router       /auth/login [post]
 func LoginHandler(c *gin.Context) {
-	// ... (โค้ดเดิม)
 	var req infoDB.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
-	// Get user from database
 	user, err := infoDB.GetUserByUsername(req.Username)
 	if err == sql.ErrNoRows {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
@@ -60,41 +80,38 @@ func LoginHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
 		return
 	}
-
-	// Check if account is active
 	if !user.IsActive {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "account is disabled"})
 		return
 	}
 
-	// Verify password
 	if err := infoDB.VerifyPassword(user.PasswordHash, req.Password); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
 
-	// Get user roles
 	roles, _ := infoDB.GetUserRoles(user.ID)
 
-	// Generate tokens
 	accessToken, _ := infoDB.GenerateAccessToken(user.ID, user.Username, roles)
 	refreshToken, _ := infoDB.GenerateRefreshToken(user.ID, user.Username)
 
-	// Store refresh token
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
 	_ = infoDB.StoreRefreshToken(user.ID, refreshToken, expiresAt)
 
-	// Update last login
 	_ = infoDB.UpdateLastLogin(user.ID)
 
-	// Log audit
 	infoDB.LogAudit(user.ID, "login", "auth", nil, gin.H{"username": user.Username}, c)
 
-	// Set tokens as httpOnly cookies
-	c.SetCookie("access_token", accessToken, 900, "/", "", false, true)      // 15 minutes
-	c.SetCookie("refresh_token", refreshToken, 604800, "/", "", false, true) // 7 days
+	domain := ""
+	secure := false
+	if os.Getenv("ENV") == "production" {
+    	domain = "my-backend.vercel.app"
+    	secure = true
+	}
 
-	// Return response
+	c.SetCookie("access_token", accessToken, 900, "/", domain, secure, true)
+	c.SetCookie("refresh_token", refreshToken, 604800, "/", domain, secure, true)
+
 	c.JSON(http.StatusOK, gin.H{
 		"user": infoDB.UserInfo{
 			ID:       user.ID,
@@ -105,13 +122,11 @@ func LoginHandler(c *gin.Context) {
 	})
 }
 
-// RefreshTokenHandler handles POST /api/auth/refresh
 func RefreshTokenHandler(c *gin.Context) {
-	// ... (โค้ดเดิมที่แก้ไขแล้ว)
-	// Try to get refresh token from cookie first
+
 	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
-		// If not in cookie, try to get from request body
+
 		var req infoDB.RefreshRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
@@ -120,27 +135,25 @@ func RefreshTokenHandler(c *gin.Context) {
 		refreshToken = req.RefreshToken
 	}
 
-	// Validate refresh token
+
 	userID, valid := infoDB.IsRefreshTokenValid(refreshToken)
 	if !valid {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired refresh token"})
 		return
 	}
 
-	// 🚩 FIX: Get user details using ID
 	userBaseInfo, err := infoDB.GetUserBaseInfoByID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user details"})
 		return
 	}
 
-	// 🚩 FIX: Get user roles live from DB
 	roles, _ := infoDB.GetUserRoles(userID)
 
-	// Generate new access token
+
 	accessToken, _ := infoDB.GenerateAccessToken(userID, userBaseInfo.Username, roles)
 
-	// Set new access token cookie
+
 	c.SetCookie("access_token", accessToken, 900, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
@@ -149,16 +162,23 @@ func RefreshTokenHandler(c *gin.Context) {
 }
 
 // LogoutHandler handles POST /api/auth/logout
+
+// LogoutHandler godoc
+// @Summary      Logout
+// @Description  Clear access and refresh tokens, revoke refresh token
+// @Tags         auth
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}  "Logged out successfully"
+// @Router       /auth/logout [post]
 func LogoutHandler(c *gin.Context) {
-	// ... (โค้ดเดิม)
-	// Get refresh token from cookie
+
 	refreshToken, err := c.Cookie("refresh_token")
 	if err == nil {
 		// Revoke refresh token if exists
 		_ = infoDB.RevokeRefreshToken(refreshToken)
 	}
 
-	// Clear cookies
+
 	c.SetCookie("access_token", "", -1, "/", "", false, true)
 	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
 
@@ -167,10 +187,9 @@ func LogoutHandler(c *gin.Context) {
 	})
 }
 
-// GetMeHandler handles GET /api/auth/me - Get current user info
+
 func GetMeHandler(c *gin.Context) {
-	// ... (โค้ดเดิมที่แก้ไขแล้ว)
-	// Get user ID from context (set by auth middleware)
+
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -178,17 +197,15 @@ func GetMeHandler(c *gin.Context) {
 	}
 	userID := userIDVal.(int)
 
-	// 🚩 FIX 1: Fetch user base info (Username, Email) from DB
 	userInfo, err := infoDB.GetUserBaseInfoByID(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user info"})
 		return
 	}
 
-	// 🚩 FIX 2: Fetch current roles live from DB
 	roles, err := infoDB.GetUserRoles(userID)
 	if err != nil {
-		// Log error but proceed with empty roles if cannot retrieve
+
 		roles = []string{}
 	}
 
@@ -197,7 +214,7 @@ func GetMeHandler(c *gin.Context) {
 			ID:       userInfo.ID,
 			Username: userInfo.Username,
 			Email:    userInfo.Email,
-			Roles:    roles, // Roles are now guaranteed to be current
+			Roles:    roles,
 		},
 	})
 }

@@ -23,12 +23,12 @@ const getPopularTags = (reviews) => {
 };
 
 const getRatingLabel = (key) => {
-    switch(key) {
-      case 'friendliness': return { label: 'ความเป็นมิตร', icon: <HeartIcon className="w-5 h-5 text-red-500" /> };
-      case 'adaptability': return { label: 'ความยืดหยุ่น', icon: <MapPinIcon className="w-5 h-5 text-blue-500" /> };
-      case 'energyLevel': return { label: 'ระดับพลังงาน', icon: <BoltIcon className="w-5 h-5 text-yellow-500" /> };
-      case 'grooming': return { label: 'การดูแลขน', icon: <PaintBrushIcon className="w-5 h-5 text-green-500" /> };
-      default: return { label: key, icon: null };
+    switch (key) {
+        case 'friendliness': return { label: 'ความเป็นมิตร', icon: <HeartIcon className="w-5 h-5 text-red-500" /> };
+        case 'adaptability': return { label: 'ความยืดหยุ่น', icon: <MapPinIcon className="w-5 h-5 text-blue-500" /> };
+        case 'energyLevel': return { label: 'ระดับพลังงาน', icon: <BoltIcon className="w-5 h-5 text-yellow-500" /> };
+        case 'grooming': return { label: 'การดูแลขน', icon: <PaintBrushIcon className="w-5 h-5 text-green-500" /> };
+        default: return { label: key, icon: null };
     }
 };
 
@@ -53,28 +53,28 @@ const CatDetailPage = () => {
             const cat = catResponse.data;
             const rawDiscussions = discussionsResponse.data.data || [];
             const mapDiscussion = (d) => ({
-            id: d.id,
-            catId: d.breed_id,
-            userId: d.user_id,
-            authorName: d.username,
-            date: d.created_at,
-            comment: d.message || d.comment,
-            upVotes: d.like_count || 0,
-            downVotes: d.dislike_count || 0,
-            ratings: d.ratings || null,
-            tags: d.tags || [],
-            userReaction: d.user_reaction,
-            parentId: d.parent_id || null,
-            replies: (d.replies || []).map(mapDiscussion)
-        });
+                id: d.id,
+                catId: d.breed_id,
+                userId: d.user_id,
+                authorName: d.username,
+                date: d.created_at,
+                comment: d.message || d.comment,
+                upVotes: d.like_count || 0,
+                downVotes: d.dislike_count || 0,
+                ratings: d.ratings || null,
+                tags: d.tags || [],
+                userReaction: d.user_reaction,
+                parentId: d.parent_id || null,
+                replies: (d.replies || []).map(mapDiscussion)
+            });
 
-        const mappedReviews = rawDiscussions
-            .filter(d => !d.is_deleted && !d.parent_id)
-            .map(mapDiscussion);
+            const mappedReviews = rawDiscussions
+                .filter(d => !d.is_deleted && !d.parent_id)
+                .map(mapDiscussion);
 
-        console.log('Final Reviews:', mappedReviews);
+            console.log('Final Reviews:', mappedReviews);
 
-        setCatData({ ...cat, reviews: mappedReviews });
+            setCatData({ ...cat, reviews: mappedReviews });
         } catch (err) {
             console.error(err);
             setError('ไม่สามารถโหลดข้อมูลได้');
@@ -90,7 +90,7 @@ const CatDetailPage = () => {
     const handleReviewSubmit = async (reviewData) => {
         try {
             await postReview(reviewData);
-            await fetchCat(catId); 
+            await fetchCat(catId);
             alert('ขอบคุณสำหรับรีวิวครับ!');
         } catch (err) {
             console.error(err);
@@ -146,74 +146,86 @@ const CatDetailPage = () => {
 
     const { reviews = [], ...breedDetails } = catData;
     const popularTags = getPopularTags(reviews);
-    
+
     const ratingsArray = breedDetails.ratings ? Object.entries(breedDetails.ratings).map(([key, value]) => ({
-      key, 
-      value, 
-      label: key.charAt(0).toUpperCase() + key.slice(1)
+        key,
+        value,
+        label: key.charAt(0).toUpperCase() + key.slice(1)
     })) : [];
 
     return (
         <div className="max-w-6xl mx-auto">
-            <section className="bg-white shadow-lg rounded-xl overflow-hidden md:flex mb-10">
-                <div className="md:w-1/3">
-                    <img 
-                        src={breedDetails.image_url || 'https://placehold.co/400x400?text=Image Not Found'} 
-                        alt={breedDetails.name} 
-                        className="w-full h-96 md:h-full object-cover"
-                        onError={(e) => e.target.src = 'https://placehold.co/400x400?text=Cat+Image+Not+Found'}
-                    />
-                </div>
-                
-                <div className="md:w-2/3 p-8">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{breedDetails.name}</h1>
-                    <p className="text-lg text-indigo-600 font-semibold mb-4 flex items-center gap-2">
-                        <MapPinIcon className="w-5 h-5 text-indigo-600" />
-                        ถิ่นกำเนิด: {breedDetails.origin || 'ไม่ระบุ'}
-                    </p>
+            <section className="bg-white shadow-lg rounded-xl overflow-hidden mb-10 px-4 pb-6 sm:px-6 md:px-10">
+                <div className="relative w-full bg-gradient-to-r">
+                    <div className="max-w-4xl mx-auto px-4 py-6">
+                        <div className="relative rounded-3xl overflow-hidden shadow-xl border border-white/60">
+                            <img
+                                src={
+                                    breedDetails.image_url ||
+                                    "https://placehold.co/800x500?text=Image Not Found"
+                                }
+                                alt={breedDetails.name}
+                                className="w-full h-auto object-contain bg-slate-900/60"
+                                onError={(e) =>
+                                (e.target.src =
+                                    "https://placehold.co/800x500?text=Cat+Image+Not+Found")
+                                }
+                            />
 
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">ประวัติความเป็นมา:</h3>
-                    <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.history}</p>
-
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">ลักษณะเด่น:</h3>
-                    <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.appearance}</p>
-
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">นิสัย:</h3>
-                    <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.temperament}</p>
-                    
-                    <div className="mb-6 p-4 bg-gray-50 border-l-4 border-indigo-500 rounded">
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">การดูแลรักษา</h3>
-                        <p className="text-gray-600 whitespace-pre-line">{breedDetails.care || 'ยังไม่มีข้อมูลการดูแล'}</p> 
-                    </div>
-                    <div className="mt-8 pt-4 border-t">
-                        <h3 className="text-2xl font-bold text-indigo-700 mb-4">
-                            คะแนนเฉลี่ย ({breedDetails.discussion_count} รีวิว)
-                        </h3>
-                        <div className="space-y-3">
-                            {ratingsArray.length > 0 ? (
-                                ratingsArray.map((item) => { 
-                                    const ratingInfo = getRatingLabel(item.key);
-                                    return (
-                                        <div key={item.key} className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2 text-gray-600">
-                                                {ratingInfo.icon} 
-                                                {ratingInfo.label}
-                                            </div>
-                                            <RatingInput
-                                                name={item.key}
-                                                value={item.value} 
-                                                readOnly={true}
-                                            />
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <p className="text-gray-500">ยังไม่มีคะแนนเฉลี่ย</p>
-                            )}
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent px-6 pt-10 pb-4">
+                                <h1 className="text-3xl md:text-4xl font-extrabold text-white drop-shadow-md">
+                                    {breedDetails.name}
+                                </h1>
+                                <p className="text-sm text-indigo-100 mt-1 flex items-center gap-2">
+                                    <MapPinIcon className="w-4 h-4 text-indigo-200" />
+                                    ถิ่นกำเนิด: {breedDetails.origin || "ไม่ระบุ"}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
+
+                <h3 className="text-xl font-bold text-gray-800 mb-2">ประวัติความเป็นมา:</h3>
+                <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.history}</p>
+
+                <h3 className="text-xl font-bold text-gray-800 mb-2">ลักษณะเด่น:</h3>
+                <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.appearance}</p>
+
+                <h3 className="text-xl font-bold text-gray-800 mb-2">นิสัย:</h3>
+                <p className="text-gray-700 mb-6 leading-relaxed">{breedDetails.temperament}</p>
+
+                <div className="mb-6 p-4 bg-gray-50 border-l-4 border-indigo-500 rounded">
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">การดูแลรักษา</h3>
+                    <p className="text-gray-600 whitespace-pre-line">{breedDetails.care || 'ยังไม่มีข้อมูลการดูแล'}</p>
+                </div>
+                <div className="mt-8 pt-4 border-t">
+                    <h3 className="text-2xl font-bold text-indigo-700 mb-4">
+                        คะแนนเฉลี่ย ({breedDetails.discussion_count} รีวิว)
+                    </h3>
+                    <div className="space-y-3">
+                        {ratingsArray.length > 0 ? (
+                            ratingsArray.map((item) => {
+                                const ratingInfo = getRatingLabel(item.key);
+                                return (
+                                    <div key={item.key} className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-gray-600">
+                                            {ratingInfo.icon}
+                                            {ratingInfo.label}
+                                        </div>
+                                        <RatingInput
+                                            name={item.key}
+                                            value={item.value}
+                                            readOnly={true}
+                                        />
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <p className="text-gray-500">ยังไม่มีคะแนนเฉลี่ย</p>
+                        )}
+                    </div>
+                </div>
+            </section >
 
             <section className="mb-10 p-4 bg-gray-50 rounded-lg shadow-inner">
                 <h3 className="text-xl font-semibold text-gray-700 mb-3">แท็กยอดนิยม</h3>
@@ -227,7 +239,7 @@ const CatDetailPage = () => {
             </section>
 
             <h2 className="text-3xl font-bold text-gray-800 mb-6 mt-12">รีวิวจากผู้ใช้งาน</h2>
-            
+
             <ReviewList
                 reviews={reviews}
                 onEdit={handleEditReview}
@@ -235,22 +247,24 @@ const CatDetailPage = () => {
                 onReply={handleReply}
             />
 
-            {user ? (
-                <ReviewForm catId={catId} onSubmitReview={handleReviewSubmit} />
-            ) : (
-                <div className="text-center p-6 bg-gray-100 rounded-lg mt-10">
-                    <p className="text-gray-600 mb-2">กรุณาเข้าสู่ระบบเพื่อรีวิว</p>
-                    <Link to="/login"><Button variant="primary">เข้าสู่ระบบ</Button></Link>
-                </div>
-            )}
-
-            <EditReviewModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                reviewToEdit={reviewToEdit}
-                onReviewUpdated={onReviewUpdated}
-            />
+{
+    user ? (
+        <ReviewForm catId={catId} onSubmitReview={handleReviewSubmit} />
+    ) : (
+        <div className="text-center p-6 bg-gray-100 rounded-lg mt-10">
+            <p className="text-gray-600 mb-2">กรุณาเข้าสู่ระบบเพื่อรีวิว</p>
+            <Link to="/login"><Button variant="primary">เข้าสู่ระบบ</Button></Link>
         </div>
+    )
+}
+
+<EditReviewModal
+    isOpen={isModalOpen}
+    onClose={() => setIsModalOpen(false)}
+    reviewToEdit={reviewToEdit}
+    onReviewUpdated={onReviewUpdated}
+/>
+        </div >
     );
 };
 

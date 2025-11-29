@@ -9,13 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware verifies JWT token
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Try to get token from cookie first
+
 		tokenString, err := c.Cookie("access_token")
 		if err != nil {
-			// If not in cookie, try Authorization header
+
 			authHeader := c.GetHeader("Authorization")
 			if authHeader == "" {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "missing authorization token"})
@@ -23,7 +22,7 @@ func AuthMiddleware() gin.HandlerFunc {
 				return
 			}
 
-			// Extract token from "Bearer <token>"
+
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid authorization format"})
@@ -33,7 +32,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			tokenString = parts[1]
 		}
 
-		// Verify token
+
 		claims, err := infoDB.VerifyToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
@@ -41,7 +40,7 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Set user info in context
+
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
 		c.Set("roles", claims.Roles)
@@ -50,7 +49,7 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// RequirePermission checks if user has specific permission
+
 func RequirePermission(permission string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("user_id")
@@ -70,7 +69,7 @@ func RequirePermission(permission string) gin.HandlerFunc {
 	}
 }
 
-// RequireRole checks if user has specific role
+
 func RequireRole(requiredRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roles, exists := c.Get("roles")

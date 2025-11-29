@@ -66,7 +66,7 @@ const ReplyItem = ({ review, onEdit, onDelete }) => {
 
   return (
     <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-      {/* Header */}
+
       <div className="flex justify-between items-center mb-2">
         <span className="font-medium text-indigo-600 text-sm">{authorName}</span>
         <div className="flex items-center gap-1.5">
@@ -92,12 +92,12 @@ const ReplyItem = ({ review, onEdit, onDelete }) => {
         </div>
       </div>
 
-      {/* Comment */}
+
       <p className="text-gray-700 text-sm leading-relaxed mb-2.5">
         {comment || '[Deleted]'}
       </p>
 
-      {/* Vote buttons */}
+
       <div className="flex items-center gap-2">
         <button
           onClick={() => handleReaction('like')}
@@ -192,13 +192,13 @@ const ReviewItem = ({ review, onEdit, onDelete, onReply }) => {
         </div>
       </div>
 
-      {/* ✅ แสดง ratings เฉพาะ top-level review */}
+
       {ratings && <AspectRatingsDisplay ratings={ratings} />}
 
-      {/* ✅ แสดงข้อความ comment */}
+
       <p className="text-gray-700 leading-relaxed mb-4">{comment || 'ไม่มีข้อความ'}</p>
 
-      {/* ✅ แสดง tags เฉพาะ top-level review */}
+
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {tags.map((tag, i) => (
@@ -219,7 +219,7 @@ const ReviewItem = ({ review, onEdit, onDelete, onReply }) => {
           {downCount}
         </button>
 
-        {/* ปุ่ม Reply */}
+
         <button
           onClick={() => setShowReplyInput(!showReplyInput)}
           className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -228,7 +228,7 @@ const ReviewItem = ({ review, onEdit, onDelete, onReply }) => {
         </button>
       </div>
 
-      {/* Input Reply */}
+
       {showReplyInput && (
         <div className="mt-3">
           <textarea
@@ -245,7 +245,7 @@ const ReviewItem = ({ review, onEdit, onDelete, onReply }) => {
         </div>
       )}
 
-      {/* ✅ Nested Replies */}
+
       {replies.length > 0 && (
         <div className="mt-3 pl-6 border-l-2 border-gray-300 space-y-3">
           {replies.map((rep) => (
@@ -276,7 +276,7 @@ const ReviewList = ({ reviews = [], onEdit, onDelete, onReply }) => {
     
     try {
       await onDelete(id);
-      // ลบออกจาก state ทันที
+
       const removeById = (list, targetId) => {
         return list
           .filter(r => r.id !== targetId)

@@ -1,31 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import { XMarkIcon } from '@heroicons/react/24/solid';
+import { useEffect, useState } from 'react';
 import { addCatBreed, updateCatBreed } from '../../api/catApi';
 import Button from '../common/Button';
-import { XMarkIcon } from '@heroicons/react/24/solid';
 
 const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
   const [formData, setFormData] = useState({
     name: '',
     origin: '',
-    description: '',
+    history: '',
+    appearance: '',
+    temperament: '',
     care_instructions: '',
-    image_url: ''
   });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  
   useEffect(() => {
     if (catToEdit) {
       setFormData({
         name: catToEdit.name || '',
         origin: catToEdit.origin || '',
-        description: catToEdit.description || '',
+        history: catToEdit.history || '',
+        appearance: catToEdit.appearance || '',
+        temperament: catToEdit.temperament || '',
         care_instructions: catToEdit.care || catToEdit.care_instructions || '',
         image_url: catToEdit.image_url || ''
       });
     } else {
-      setFormData({ name: '', origin: '', description: '', care_instructions: '', image_url: '' });
+      
+      setFormData({ name: '', origin: '', history: '', appearance: '', temperament: '', care_instructions: '', image_url: '' });
     }
   }, [catToEdit]);
 
@@ -39,10 +44,13 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
     setLoading(true);
     setError('');
 
+    
     const payload = {
       name: formData.name,
       origin: formData.origin,
-      description: formData.description,
+      history: formData.history,
+      appearance: formData.appearance,
+      temperament: formData.temperament,
       care: formData.care_instructions,
       image_url: formData.image_url
     };
@@ -82,6 +90,7 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
         {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อสายพันธุ์ *</label>
             <input
@@ -95,6 +104,7 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
             />
           </div>
 
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">ถิ่นกำเนิด</label>
             <input
@@ -106,6 +116,7 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
               placeholder="เช่น Scotland"
             />
           </div>
+
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">URL รูปภาพ</label>
@@ -122,17 +133,43 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
             )}
           </div>
 
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
             <textarea
-              name="description"
-              value={formData.description}
+              name="history"
+              value={formData.history}
+              onChange={handleChange}
+              rows="3"
+              className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-300 outline-none"
+              placeholder="ประวัติความเป็นมา..."
+            ></textarea>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
+            <textarea
+              name="appearance"
+              value={formData.appearance}
+              onChange={handleChange}
+              rows="3"
+              className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-300 outline-none"
+              placeholder="ลักษณะเด่น..."
+            ></textarea>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
+            <textarea
+              name="temperament"
+              value={formData.temperament}
               onChange={handleChange}
               rows="3"
               className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-300 outline-none"
               placeholder="ลักษณะนิสัยทั่วไป..."
             ></textarea>
           </div>
+
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">การดูแลรักษา</label>
