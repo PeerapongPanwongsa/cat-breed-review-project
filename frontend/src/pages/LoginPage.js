@@ -26,7 +26,13 @@ const LoginPage = () => {
         setError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
       }
     } catch (err) {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message);
+			const errorMessage = err.message || '';
+			
+			if (errorMessage.includes('invalid credentials')) {
+				setError('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+			} else {
+				setError('เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง');
+			}
     } finally {
       setLoading(false);
     }

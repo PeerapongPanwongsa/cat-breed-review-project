@@ -5,7 +5,6 @@ import AdminCatList from '../components/admin/AdminCatList';
 const AdminDashboard = () => {
   const { user, isAdmin } = useAuth();
 
-  // (แก้ตรงนี้: ใช้ isAdmin)
   if (!user || !isAdmin) {
     return (
       <div className="text-center text-red-500 mt-10">
@@ -24,11 +23,9 @@ const AdminDashboard = () => {
       </p>
 
       <section className="mb-12">
-        {/* ตารางจัดการแมวอยู่ที่นี่ */}
         <AdminCatList />
       </section>
       
-      {/* ... ส่วนอื่นๆ ... */}
     </div>
   );
 };

@@ -1,10 +1,6 @@
 import React from 'react';
 import { StarIcon } from '@heroicons/react/20/solid';
 
-/**
- * Component Helper: แสดงผลดาวตามค่าที่กำหนด (ใช้สำหรับโหมด Display ใน CatDetailPage)
- * รับ props: value (คะแนน), readOnly
- */
 const StarRatingDisplay = ({ value, readOnly = true }) => {
     const roundedRating = Math.round(value);
     
@@ -17,26 +13,16 @@ const StarRatingDisplay = ({ value, readOnly = true }) => {
                                 ${!readOnly ? 'cursor-pointer' : ''}`}
                 />
             ))}
-            {/* แสดงค่าตัวเลขด้วย */}
             <span className="text-sm font-semibold text-gray-700 ml-1">{value ? value.toFixed(1) : '0.0'}</span>
         </div>
     );
 };
 
-
-/**
- * Main Component: RatingInput (ใช้ได้ทั้งโหมด Input และ Display)
- * โหมด Input: รับ ratings, onChange (ใช้ใน ReviewForm)
- * โหมด Display: รับ name, value, readOnly (ใช้ใน CatDetailPage สำหรับคะแนนเฉลี่ย)
- */
 const RatingInput = ({ ratings, onChange, name, value, readOnly = false }) => {
-    // 💡 หากมี name/value/readOnly แสดงว่าอยู่ในโหมด Display (สำหรับคะแนนเฉลี่ย)
     if (readOnly) {
-        // ใช้ StarRatingDisplay ในโหมด Display
         return <StarRatingDisplay value={value || 0} readOnly={true} />;
     }
     
-    // โหมด Input (ใช้ใน ReviewForm)
     const aspects = [
         { id: 'friendliness', label: 'ความเป็นมิตร:' },
         { id: 'adaptability', label: 'ความง่ายในการเลี้ยง:' },
@@ -51,7 +37,6 @@ const RatingInput = ({ ratings, onChange, name, value, readOnly = false }) => {
         });
     };
 
-    // Sub-component สำหรับการรับ Input ดาว
     const StarRatingInput = ({ aspectId, currentValue }) => {
         return (
             <div className="flex space-x-1">
@@ -78,13 +63,11 @@ const RatingInput = ({ ratings, onChange, name, value, readOnly = false }) => {
         );
     };
 
-    // โหมด Input: แสดงหัวข้อทั้งหมดพร้อมช่องกรอก
     return (
         <div className="space-y-4">
             {aspects.map((aspect) => (
                 <div key={aspect.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                     <label className="text-gray-600 mb-2 sm:mb-0">{aspect.label}</label>
-                    {/* ✅ ใช้ Optional Chaining และ Default Value (|| 0) เพื่อป้องกัน Error */}
                     <StarRatingInput aspectId={aspect.id} currentValue={ratings?.[aspect.id] || 0} /> 
                 </div>
             ))}

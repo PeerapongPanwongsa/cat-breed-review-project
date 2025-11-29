@@ -10,20 +10,16 @@ const CatListPage = () => {
   const { data: responseData, loading, error, request: fetchCats } = useApi(getCats);
   const [searchParams] = useSearchParams();
 
-  // 1. ดึงข้อมูลดิบ
   const rawCats = responseData?.data || (Array.isArray(responseData) ? responseData : []);
 
-  // 2. ใช้ข้อมูลที่เรียงตาม A-Z มาจาก Backend แล้ว (ลบ Client-side sorting)
   const cats = rawCats;
 
   useEffect(() => {
     const query = searchParams.get('q');
     
     if (query) {
-      // ใช้ q เพื่อค้นหา (Backend ต้องรองรับ)
       fetchCats({ q: query, limit: 1000, offset: 0 }); 
     } else {
-      // ดึงข้อมูลทั้งหมดโดยไม่มีการจำกัด limit/offset เพื่อแสดงรายการทั้งหมด
       fetchCats({ limit: 1000, offset: 0 }); 
     }
   }, [fetchCats, searchParams]);

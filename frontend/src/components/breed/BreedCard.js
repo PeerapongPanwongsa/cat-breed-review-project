@@ -1,8 +1,5 @@
-// frontend/src/components/breed/BreedCard.js
-
 import { StarIcon } from '@heroicons/react/20/solid';
 import { Link, useNavigate } from 'react-router-dom';
-// 💡 เพิ่ม MapPinIcon
 import { MapPinIcon } from '@heroicons/react/24/solid';
 
 const StarRating = ({ rating = 0, size = 'w-4 h-4' }) => { 
@@ -49,18 +46,13 @@ const AspectRatings = ({ ratings }) => {
     );
 };
 
-/**
- * การ์ดแสดงข้อมูลแมว 1 ใบ
- */
 const BreedCard = ({ breed }) => {
-    // ✅ เพิ่ม 'origin' ใน Destructuring
     const { id, name, image_url, history, ratings, origin } = breed;
     
     const navigate = useNavigate(); 
 
     return (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col transition-shadow duration-300 hover:shadow-2xl">
-            {/* 1. รูปภาพ */}
             <Link to={`/cats/${id}`} className="relative">
                 <img
                     src={image_url || 'https://placehold.co/600x400/gray/white?text=No+Image'}
@@ -73,7 +65,6 @@ const BreedCard = ({ breed }) => {
             <div className="p-5 flex-grow flex flex-col">
                 <h3 className="text-xl font-bold text-gray-800 mb-2">{name}</h3>
                 
-                {/* ✅ แสดงถิ่นกำเนิด */}
                 <p className="text-sm text-gray-500 flex items-center mb-4">
                     <MapPinIcon className="w-4 h-4 mr-1 text-red-500" />
                     {origin || 'ไม่ระบุถิ่นกำเนิด'}

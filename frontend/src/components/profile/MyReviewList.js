@@ -6,9 +6,8 @@ import { Link } from 'react-router-dom';
 import Button from '../common/Button';
 import { formatDate } from '../../utils/formatDate';
 import EditReviewModal from './EditReviewModal';
-import { StarIcon } from '@heroicons/react/20/solid'; // (Import ดาว)
+import { StarIcon } from '@heroicons/react/20/solid';
 
-// (Component ย่อยแสดงดาว - ใช้โค้ดเดิม)
 const StarRating = ({ rating }) => (
   <div className="flex">
     {[...Array(5)].map((_, i) => (
@@ -19,7 +18,6 @@ const StarRating = ({ rating }) => (
 
 const MyReviewItem = ({ review, onDelete, onEdit }) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  // (ป้องกัน error กรณีค่าว่าง)
   const commentText = review.comment || review.message || "";
   const ratings = review.ratings || {};
   const tags = review.tags || [];
@@ -37,7 +35,6 @@ const MyReviewItem = ({ review, onDelete, onEdit }) => {
     }
   };
 
-  // 🚩 คำนวณค่าเฉลี่ยรวม 4 คุณสมบัติ
   const validRatings = Object.values(ratings).filter(r => r > 0);
   const averageRating = validRatings.length > 0 
     ? validRatings.reduce((sum, current) => sum + current, 0) / validRatings.length 
@@ -47,13 +44,11 @@ const MyReviewItem = ({ review, onDelete, onEdit }) => {
     <div className="p-4 border rounded-lg bg-gray-50 hover:bg-white transition shadow-sm">
       <div className="flex justify-between items-start mb-2">
         <div>
-            {/* 🚩 ใช้ชื่อสายพันธุ์ที่มาจาก Back-end (review.breed_name) */}
             <h4 className="font-bold text-indigo-700 text-lg">
                 {review.breed_name || `Cat ID: ${review.breed_id}`}
             </h4>
             <p className="text-xs text-gray-500">{formatDate(review.date)}</p>
         </div>
-        {/* (ปุ่มจัดการ) */}
         <div className="flex gap-2">
           <Button variant="secondary" className="text-xs px-3 py-1" onClick={() => onEdit(review)}>แก้ไข</Button>
           <Button variant="danger" className="text-xs px-3 py-1" onClick={handleDeleteClick} disabled={isDeleting}>
@@ -62,16 +57,13 @@ const MyReviewItem = ({ review, onDelete, onEdit }) => {
         </div>
       </div>
 
-      {/* (แสดงดาว - ค่าเฉลี่ยรวม) */}
       <div className="flex items-center gap-2 mb-2 text-sm text-gray-600">
          <span>คะแนนรวม: {averageRating.toFixed(1)}</span>
          <StarRating rating={averageRating} />
       </div>
 
-      {/* (แสดงคอมเมนต์) */}
       <p className="text-gray-800 mb-3">{commentText}</p>
 
-      {/* (แสดงแท็ก) */}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
             {tags.map((tag, index) => (
@@ -92,7 +84,6 @@ const MyReviewItem = ({ review, onDelete, onEdit }) => {
 const MyReviewList = () => {
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
-  // 🚩 ลบ state catsMap และโค้ดดึง getCats ที่ไม่มีประสิทธิภาพออกไป
 
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -102,13 +93,12 @@ const MyReviewList = () => {
     if (!user) return;
     setLoading(true);
     try {
-      // 1. ดึงรีวิว (ตอนนี้ Back-end ส่ง BreedName มาแล้ว)
       const reviewsRes = await getReviewsByUserId(user.id);
       const rawDiscussions = reviewsRes.data.data || reviewsRes.data || [];
       const mappedReviews = rawDiscussions.map(item => ({
          ...item,
          comment: item.comment || item.message || "",
-         breed_id: item.breed_id, // ใช้ breed_id แทน catId
+         breed_id: item.breed_id,
          date: item.date || item.created_at,
          ratings: item.ratings || {},
          tags: item.tags || []
@@ -128,24 +118,20 @@ const MyReviewList = () => {
     }
   }, [user]);
 
-  // (ส่วน Delete/Edit - Logic ปรับปรุง)
   const handleDeleteReview = async (reviewId, breedId) => {
     try {
       await deleteReview(reviewId);
-      // อัปเดต UI ใน Profile Page
       setReviews(prev => prev.filter(r => r.id !== reviewId)); 
-      
-      // 🚩 บังคับรีโหลดหน้าเว็บเพื่ออัปเดตค่าเฉลี่ยดาวในหน้า Cat Detail/Cat List
+
       window.location.reload(); 
     } catch (err) { throw err; }
   };
 
   const handleReviewUpdated = (updatedReview) => {
-    // อัปเดต UI ใน Profile Page
     setReviews(prev => prev.map(r => {
         if (r.id === updatedReview.id) {
              return { 
-                 ...r, // เก็บ breed_name เดิมไว้
+                 ...r,
                  ...updatedReview, 
                  comment: updatedReview.message,
                  breed_id: updatedReview.breed_id,
@@ -154,12 +140,10 @@ const MyReviewList = () => {
         return r;
     }));
     
-    // 🚩 บังคับรีโหลดหน้าเว็บเพื่ออัปเดตค่าเฉลี่ยดาวในหน้า Cat Detail/Cat List
     window.location.reload();
   };
   
   const handleEditRequest = (review) => {
-    // แมปฟิลด์เพื่อให้เข้ากับ EditReviewModal ที่ใช้ 'comment' แทน 'message'
     setReviewToEdit({...review, comment: review.message || review.comment});
     setIsModalOpen(true);
   };

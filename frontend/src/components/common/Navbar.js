@@ -3,13 +3,10 @@ import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const Navbar = () => {
-  // ดึง isAdmin มาใช้เลย
   const { user, isAdmin } = useAuth();
 
-  // --- เพิ่ม 2 บรรทัดนี้เพื่อดูค่าจริง ---
   console.log("Navbar User:", user);
   console.log("Is Admin?:", isAdmin);
-  // ----------------------------------
 
   const baseLinkStyle = "px-5 py-2 rounded-lg font-medium transition-all duration-200 border-2";
 
@@ -36,7 +33,6 @@ const Navbar = () => {
                 สวัสดี, {user.username}
               </Link>
 
-              {/* (เช็ค isAdmin ตรงนี้) */}
               {isAdmin && (
                 <Link to="/admin" className="text-sm font-bold text-red-500 hover:text-red-700 hover:underline ml-2">
                   (Admin System)

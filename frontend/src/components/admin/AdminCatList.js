@@ -9,17 +9,15 @@ const AdminCatList = () => {
   const [cats, setCats] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // (1. เพิ่ม State สำหรับคำค้นหา)
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [catToEdit, setCatToEdit] = useState(null);
 
   const fetchCats = async () => {
     setLoading(true);
     try {
-      const response = await getCats({ limit: 1000 }); // (ดึงมาให้หมดเพื่อเรียงเอง)
+      const response = await getCats({ limit: 1000 }); 
       const catsData = response.data.data || response.data || [];
       setCats(Array.isArray(catsData) ? catsData : []);
     } catch (error) {
@@ -58,31 +56,24 @@ const AdminCatList = () => {
     fetchCats(); 
   };
 
-  // --- (2. Logic การเรียงลำดับและค้นหา) ---
-  
-  // 2.1 กรองตามคำค้นหา
   const filteredCats = cats.filter(cat => 
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 2.2 เรียงลำดับตามชื่อ (A-Z)
   const sortedCats = [...filteredCats].sort((a, b) => 
     a.name.localeCompare(b.name, 'th', { sensitivity: 'base' })
   );
-  // ----------------------------------------
 
   if (loading) return <LoadingSpinner />;
 
   return (
     <div className="bg-white rounded-lg shadow border overflow-hidden">
-      {/* Header & Search */}
       <div className="p-4 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
         <h3 className="text-lg font-semibold text-gray-700 whitespace-nowrap">
           รายการสายพันธุ์ ({sortedCats.length})
         </h3>
         
         <div className="flex w-full sm:w-auto gap-3">
-          {/* (3. ช่องค้นหา) */}
           <div className="relative flex-grow sm:flex-grow-0">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -102,12 +93,11 @@ const AdminCatList = () => {
         </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-100 text-gray-600 text-sm uppercase">
-              <th className="p-4 border-b w-16">#</th> {/* เปลี่ยนจาก ID เป็น # (ลำดับ) */}
+              <th className="p-4 border-b w-16">#</th>
               <th className="p-4 border-b w-24">รูปภาพ</th>
               <th className="p-4 border-b">ชื่อสายพันธุ์</th>
               <th className="p-4 border-b">ถิ่นกำเนิด</th>
@@ -118,7 +108,6 @@ const AdminCatList = () => {
             {sortedCats.length > 0 ? (
               sortedCats.map((cat, index) => (
                 <tr key={cat.id} className="hover:bg-gray-50 border-b last:border-none">
-                  {/* (4. ใช้ index + 1 เพื่อแสดงลำดับ 1, 2, 3... สวยงาม) */}
                   <td className="p-4 font-mono text-gray-500">{index + 1}</td>
                   
                   <td className="p-4">
@@ -162,7 +151,6 @@ const AdminCatList = () => {
         </table>
       </div>
 
-      {/* Modal */}
       <CatFormModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

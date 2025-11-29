@@ -4,30 +4,27 @@ import Button from '../common/Button';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 
 const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
-  // State สำหรับฟอร์ม
   const [formData, setFormData] = useState({
     name: '',
     origin: '',
     description: '',
-    care_instructions: '', // (ตรงกับ JSON ของ Backend: care_instructions หรือ care) *เช็ค Backend ใช้ care แต่ DB ใช้ care_instructions เดี๋ยวเราแมพให้
+    care_instructions: '',
     image_url: ''
   });
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ถ้ามี catToEdit ส่งมา (โหมดแก้ไข) ให้เติมข้อมูลลงฟอร์ม
   useEffect(() => {
     if (catToEdit) {
       setFormData({
         name: catToEdit.name || '',
         origin: catToEdit.origin || '',
         description: catToEdit.description || '',
-        care_instructions: catToEdit.care || catToEdit.care_instructions || '', // (รับค่าจาก backend)
+        care_instructions: catToEdit.care || catToEdit.care_instructions || '',
         image_url: catToEdit.image_url || ''
       });
     } else {
-      // โหมดเพิ่มใหม่: ล้างฟอร์ม
       setFormData({ name: '', origin: '', description: '', care_instructions: '', image_url: '' });
     }
   }, [catToEdit]);
@@ -42,29 +39,25 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
     setLoading(true);
     setError('');
 
-    // เตรียมข้อมูลส่ง Backend
-    // (Backend struct: Name, Origin, Description, Care, ImageURL)
     const payload = {
       name: formData.name,
       origin: formData.origin,
       description: formData.description,
-      care: formData.care_instructions, // (Mapping ให้ตรงกับ Backend Request Struct)
+      care: formData.care_instructions,
       image_url: formData.image_url
     };
 
     try {
       if (catToEdit) {
-        // Update
         await updateCatBreed(catToEdit.id, payload);
         alert('แก้ไขข้อมูลเรียบร้อย!');
       } else {
-        // Create
         await addCatBreed(payload);
         alert('เพิ่มสายพันธุ์ใหม่เรียบร้อย!');
       }
       
-      onSaveSuccess(); // แจ้งแม่ว่าเสร็จแล้ว
-      onClose();       // ปิด Modal
+      onSaveSuccess();
+      onClose();
     } catch (err) {
       console.error(err);
       setError('เกิดข้อผิดพลาด: ' + (err.response?.data?.error || err.message));
@@ -89,7 +82,6 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
         {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* ชื่อสายพันธุ์ */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">ชื่อสายพันธุ์ *</label>
             <input
@@ -103,7 +95,6 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
             />
           </div>
 
-          {/* ถิ่นกำเนิด */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">ถิ่นกำเนิด</label>
             <input
@@ -116,7 +107,6 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
             />
           </div>
 
-          {/* รูปภาพ URL */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">URL รูปภาพ</label>
             <input
@@ -132,7 +122,6 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
             )}
           </div>
 
-          {/* คำอธิบาย */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
             <textarea
@@ -145,7 +134,6 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
             ></textarea>
           </div>
 
-          {/* วิธีเลี้ยงดู */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">การดูแลรักษา</label>
             <textarea

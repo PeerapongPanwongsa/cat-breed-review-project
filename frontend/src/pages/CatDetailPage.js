@@ -65,15 +65,14 @@ const CatDetailPage = () => {
             tags: d.tags || [],
             userReaction: d.user_reaction,
             parentId: d.parent_id || null,
-            replies: (d.replies || []).map(mapDiscussion) // ✅ เรียกตัวเองแบบ recursive
+            replies: (d.replies || []).map(mapDiscussion)
         });
 
-        // ✅ เอาเฉพาะ top-level reviews (ไม่มี parent_id)
         const mappedReviews = rawDiscussions
             .filter(d => !d.is_deleted && !d.parent_id)
             .map(mapDiscussion);
 
-        console.log('Final Reviews:', mappedReviews); // ✅ Debug
+        console.log('Final Reviews:', mappedReviews);
 
         setCatData({ ...cat, reviews: mappedReviews });
         } catch (err) {
@@ -130,7 +129,6 @@ const CatDetailPage = () => {
         fetchCat(catId);
     };
 
-    // ✅ ฟังก์ชันสำหรับ reply
     const handleReply = async (parentReviewId, message) => {
         if (!user) return alert("กรุณาเข้าสู่ระบบเพื่อโต้ตอบ");
         try {
@@ -157,7 +155,6 @@ const CatDetailPage = () => {
 
     return (
         <div className="max-w-6xl mx-auto">
-            {/* ส่วนแสดงรายละเอียดแมว */}
             <section className="bg-white shadow-lg rounded-xl overflow-hidden md:flex mb-10">
                 <div className="md:w-1/3">
                     <img 
@@ -218,7 +215,6 @@ const CatDetailPage = () => {
                 </div>
             </section>
 
-            {/* Popular Tags */}
             <section className="mb-10 p-4 bg-gray-50 rounded-lg shadow-inner">
                 <h3 className="text-xl font-semibold text-gray-700 mb-3">แท็กยอดนิยม</h3>
                 <div className="flex flex-wrap gap-2">
@@ -230,14 +226,13 @@ const CatDetailPage = () => {
                 </div>
             </section>
 
-            {/* รีวิว */}
             <h2 className="text-3xl font-bold text-gray-800 mb-6 mt-12">รีวิวจากผู้ใช้งาน</h2>
             
             <ReviewList
                 reviews={reviews}
                 onEdit={handleEditReview}
                 onDelete={handleDeleteReview}
-                onReply={handleReply} // ✅ เพิ่มตรงนี้
+                onReply={handleReply}
             />
 
             {user ? (
@@ -249,7 +244,6 @@ const CatDetailPage = () => {
                 </div>
             )}
 
-            {/* Modal แก้ไข */}
             <EditReviewModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}

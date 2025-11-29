@@ -10,7 +10,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // --- ฟังก์ชันช่วยเช็ค Admin ---
   const checkIsAdmin = (userData) => {
     if (!userData) return false;
     if (userData.roles && Array.isArray(userData.roles)) {
@@ -19,11 +18,9 @@ export const AuthProvider = ({ children }) => {
     return userData.role === 'admin';
   };
 
-  // --- useEffect: ตรวจสอบ Session เมื่อเปิดหน้าเว็บ ---
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // 1. เช็ค User
         const response = await apiClient.get('/auth/me');
         setUser(response.data.user);
 
@@ -50,10 +47,13 @@ export const AuthProvider = ({ children }) => {
       }
       return false;
 
-    } catch (error) {
-      console.error("Login API error:", error);
-      throw error;
-    }
+    }  catch (error) {
+			console.error("Login API error:", error);
+			if (error.response && error.response.data && error.response.data.error) {
+				throw new Error(error.response.data.error); 
+			}
+			throw new Error("Network or Server error occurred");
+		}
   };
 
   const logout = async () => {

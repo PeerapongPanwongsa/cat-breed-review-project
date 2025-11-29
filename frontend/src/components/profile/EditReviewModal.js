@@ -15,7 +15,6 @@ const EditReviewModal = ({ isOpen, onClose, reviewToEdit, onReviewUpdated }) => 
   useEffect(() => {
     if (reviewToEdit) {
       setRatings(reviewToEdit.ratings || { friendliness: 0, adaptability: 0, energyLevel: 0, grooming: 0 });
-      // ใช้ message หรือ comment เป็นค่าเริ่มต้น
       setComment(reviewToEdit.message || reviewToEdit.comment || ''); 
       setTags(reviewToEdit.tags || []);
     }
@@ -26,17 +25,15 @@ const EditReviewModal = ({ isOpen, onClose, reviewToEdit, onReviewUpdated }) => 
     setLoading(true);
     setError('');
 
-    // 🚩 (แก้ไข) ลบฟิลด์ breed_id ออก เพราะ Back-end ไม่ได้ต้องการใน Request Body
     const updatedReviewData = {
       ratings: ratings,
-      message: comment, // Back-end รับ message
+      message: comment,
       tags: tags,
     };
 
     try {
       const response = await updateReview(reviewToEdit.id, updatedReviewData);
-      
-      // Back-end response.data จะเป็น Discussion struct ที่ถูกอัปเดตแล้ว
+
       onReviewUpdated(response.data); 
       setLoading(false);
       onClose();

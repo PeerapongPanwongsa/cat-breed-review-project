@@ -9,7 +9,6 @@ const PrivateRoute = ({ requiredRole = 'member' }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // ถ้าต้องการเข้าหน้า admin แต่ user ไม่ใช่ admin
   if (requiredRole === 'admin' && !isAdmin) {
     return <Navigate to="/" replace />;
   }
