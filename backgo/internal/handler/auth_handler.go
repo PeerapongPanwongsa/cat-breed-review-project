@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 	"time"
-	"os"
 	"backgo/internal/infoDB"
 
 	"github.com/gin-gonic/gin"
@@ -102,15 +101,9 @@ func LoginHandler(c *gin.Context) {
 
 	infoDB.LogAudit(user.ID, "login", "auth", nil, gin.H{"username": user.Username}, c)
 
-	domain := ""
-	secure := false
-	if os.Getenv("ENV") == "production" {
-    	domain = "my-backend.vercel.app"
-    	secure = true
-	}
 
-	c.SetCookie("access_token", accessToken, 900, "/", domain, secure, true)
-	c.SetCookie("refresh_token", refreshToken, 604800, "/", domain, secure, true)
+	c.SetCookie("access_token", accessToken, 900, "/", "", false, true)
+	c.SetCookie("refresh_token", refreshToken, 604800, "/", "", false, true)
 
 	c.JSON(http.StatusOK, gin.H{
 		"user": infoDB.UserInfo{

@@ -58,7 +58,7 @@ func initDB() {
 }
 
 var allowedOrigins = []string{"http://localhost:3000", "http://127.0.0.1:3000",
-							"https://my-app.vercel.app","http://127.0.0.1:8080","http://localhost:8080"}
+							"http://127.0.0.1:8080","http://localhost:8080"}
 
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
