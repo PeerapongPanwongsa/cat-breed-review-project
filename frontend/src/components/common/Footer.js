@@ -8,7 +8,7 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold text-white mb-3">CatBreed Review</h3>
             <p className="text-sm">
-              เว็บไซต์ศูนย์รวมข้อมูลและรีวิวสายพันธุ์แมว
+              เว็บไซต์รวมข้อมูลและรีวิวสายพันธุ์แมว
               จากประสบการณ์ผู้เลี้ยงจริง
             </p>
           </div>
@@ -24,13 +24,16 @@ const Footer = () => {
 
           <div>
             <h3 className="text-lg font-semibold text-white mb-3">Follow Us</h3>
-            <p className="text-sm">
-              Project for Full-Stack Course
-            </p>
+            <div className="text-sm">
+              <p>660710710 ธนยศ รัตนสุรีย์โรจน์ IT</p>
+              <p>660710713 ธนัฐพิพัฒน์ เขียววิจิตร</p>
+              <p>660710730 พีระพงษ์ พันธ์วงศา</p>
+              <p>660710735 เมธาวัฒน์ คูศิริวานิชกร</p>
+            </div>
           </div>
         </div>
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
-          <p>&copy; 2025 CatBreed Review Project. All rights reserved.</p>
+          <p>&copy; 2025 CatBreed Review Project.</p>
         </div>
       </div>
     </footer>

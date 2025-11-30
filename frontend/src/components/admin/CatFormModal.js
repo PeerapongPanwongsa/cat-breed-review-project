@@ -135,7 +135,7 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
 
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">ประวัติความเป็นมา</label>
             <textarea
               name="history"
               value={formData.history}
@@ -147,7 +147,7 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">ลักษณะเด่น</label>
             <textarea
               name="appearance"
               value={formData.appearance}
@@ -159,7 +159,7 @@ const CatFormModal = ({ isOpen, onClose, catToEdit, onSaveSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">คำอธิบาย</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">นิสัย</label>
             <textarea
               name="temperament"
               value={formData.temperament}
